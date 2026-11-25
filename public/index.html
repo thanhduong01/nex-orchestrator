@@ -11,6 +11,8 @@
   --text: #191919; --text-2: #666666; --text-3: #8a8a85;
   --accent: #257de0;
   --s1: #257de0; --s2: #f47230; --s3: #00b894; --s4: #f2a600;
+  --c-skill: #257de0; --c-mcp: #f47230; --c-web: #00b894; --c-shell: #f2a600; --c-file: #ee7fac; --c-agent: #008a17; --c-search: #6a4ce2;
+  --t1: #b9d6f7; --t2: #7fb2ee; --t3: #3f88dd; --t4: #1d5aa6;
   --bad: #c8352f; --warn: #b26b00; --good: #1d7a32;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -21,6 +23,8 @@
     --text: #efefef; --text-2: #9c9c9c; --text-3: #7a7a7a;
     --accent: #338ced;
     --s1: #338ced; --s2: #e76624; --s3: #00a888; --s4: #d28e05;
+  --c-skill: #338ced; --c-mcp: #e76624; --c-web: #00a888; --c-shell: #d28e05; --c-file: #e24d8b; --c-agent: #0aac23; --c-search: #9887ef;
+  --t1: #1f3f66; --t2: #2d5f99; --t3: #4f8fdb; --t4: #9cc4f3;
     --bad: #f07070; --warn: #e0a43a; --good: #4cc463;
   }
 }
@@ -30,6 +34,8 @@
   --text: #efefef; --text-2: #9c9c9c; --text-3: #7a7a7a;
   --accent: #338ced;
   --s1: #338ced; --s2: #e76624; --s3: #00a888; --s4: #d28e05;
+  --c-skill: #338ced; --c-mcp: #e76624; --c-web: #00a888; --c-shell: #d28e05; --c-file: #e24d8b; --c-agent: #0aac23; --c-search: #9887ef;
+  --t1: #1f3f66; --t2: #2d5f99; --t3: #4f8fdb; --t4: #9cc4f3;
   --bad: #f07070; --warn: #e0a43a; --good: #4cc463;
 }
 * { box-sizing: border-box; }
@@ -121,6 +127,46 @@ a.link { color: var(--accent); cursor: pointer; font-weight: 400; }
 .crumbs { margin-bottom: 10px; color: var(--text-2); }
 .crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; }
 details summary { cursor: pointer; }
+/* flow tab */
+.fl-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+.fl-chip { font: inherit; font-size: 13px; color: var(--text); border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 5px 12px; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; max-width: 100%; }
+.fl-chip.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.fl-chip .dot { margin: 0; }
+.fl-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; }
+@media (max-width: 1000px) { .fl-layout { grid-template-columns: 1fr; } }
+.fl-legend, .fl-tlegend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); margin: 4px 0 6px; }
+.fl-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.fl-tlegend { gap: 10px; font-size: 11.5px; }
+.fl-tlegend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.fl-graph { width: 100%; height: auto; display: block; }
+.fl-label { font-size: 12px; fill: var(--text); }
+.fl-meta { font-size: 10.5px; fill: var(--text-3); font-family: var(--mono); }
+.fl-edge { fill: none; stroke: var(--border); stroke-linecap: round; transition: stroke-width .6s ease; }
+.fl-edge.hot { stroke: color-mix(in srgb, var(--text-3) 55%, transparent); }
+.fl-halo, .fl-spin { transform-box: fill-box; transform-origin: center; }
+.fl-ping { animation: fl-ping .9s ease-out; }
+@keyframes fl-ping { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(2.3); } }
+.fl-spin { animation: spin 1s linear infinite; }
+.fl-breathe { animation: fl-breathe 1.8s ease-in-out infinite; }
+@keyframes fl-breathe { 50% { opacity: .35; } }
+.fl-gauge { display: flex; gap: 14px; align-items: center; }
+.fl-big { font-size: 28px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.fl-stack { display: flex; height: 14px; gap: 2px; margin: 8px 0 4px; }
+.fl-stack span { display: block; height: 100%; flex: 0 1 0; min-width: 2px; transition: flex-grow .7s ease; }
+.fl-stack span:first-child { border-radius: 4px 0 0 4px; } .fl-stack span:last-child { border-radius: 0 4px 4px 0; }
+.fl-kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 13px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.fl-kv span:nth-child(odd) { color: var(--text-2); }
+.fl-ticker { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
+.fl-tick { display: flex; gap: 8px; font-size: 12.5px; padding: 3px 0; align-items: baseline; min-width: 0; overflow-wrap: anywhere; }
+.fl-tick.new { animation: fl-slide .45s ease-out; }
+@keyframes fl-slide { from { opacity: 0; transform: translateY(-8px); } }
+.fl-t { font-family: var(--mono); color: var(--text-3); font-size: 11.5px; flex: none; }
+.fl-wfhead { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.fl-rowlabel { font-size: 11.5px; fill: var(--text-2); }
+.fl-axis { font-size: 10px; fill: var(--text-3); }
+nav#tabs { max-width: 100%; overflow-x: auto; }
+nav#tabs button { white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .fl-ping, .fl-spin, .fl-breathe, .fl-tick.new { animation: none; } .fl-edge, .fl-stack span { transition: none; } }
 @media (max-width: 640px) {
   .filters { margin-left: 0; width: 100%; }
   .tl-row { grid-template-columns: 54px 1fr; }
@@ -137,6 +183,7 @@ details summary { cursor: pointer; }
     <nav id="tabs">
       <button data-tab="overview" class="on">Overview</button>
       <button data-tab="live">Live <span id="live-dot" class="dot off"></span></button>
+      <button data-tab="flow">Flow</button>
       <button data-tab="skills">Skills</button>
       <button data-tab="dests">Tool Calls</button>
       <button data-tab="sessions">Sessions</button>
@@ -519,11 +566,304 @@ function viewLive(D) {
   return head + `<div class="grid live-grid">${cards}</div><div class="card" style="margin-top:12px"><h3>Luồng sự kiện trực tiếp (mới nhất ở trên)</h3><div class="feed">${feed}</div></div>`;
 }
 
+/* ---------- flow (call graph + context + waterfall) ---------- */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NOSK = '(không skill)';
+const FLOW = { sid: null, sig: '', seen: new Map(), ticks: new Set(), first: true, nodes: new Map(), edges: new Map(), timer: null, s: null };
+const svgEl = (tag, attrs = {}, parent) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const catColor = (cat) => ({ session: 'var(--text)', none: 'var(--text-3)', other: 'var(--text-2)' }[cat] || `var(--c-${cat})`);
+const clipLabel = (s, n = 28) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+
+function flowModel(s) {
+  const nodes = new Map(), edges = new Map(), items = [];
+  const node = (id, o) => { if (!nodes.has(id)) nodes.set(id, { id, calls: 0, tokens: 0, ...o }); return nodes.get(id); };
+  const edge = (a, b) => { const k = a + '→' + b; if (!edges.has(k)) edges.set(k, { k, a, b, tokens: 0 }); return edges.get(k); };
+  node('S', { label: s.title || s.id.slice(0, 8), cat: 'session', col: 0 });
+  const skillId = (inv) => { const sk = (inv != null && s.invocations[inv]?.skill) || NOSK; node('K:' + sk, { label: sk, cat: sk === NOSK ? 'none' : 'skill', col: 1 }); return 'K:' + sk; };
+  for (const c of s.calls) { const k = skillId(c.inv), n = nodes.get(k); n.calls++; n.tokens += tok(c); edge('S', k).tokens += tok(c); }
+  // keep the busiest destinations, fold the rest into "khác"
+  const count = (arr) => { const m = new Map(); for (const x of arr) m.set(x, (m.get(x) || 0) + 1); return m; };
+  const top = (m, n) => new Set([...m].sort((a, b) => b[1] - a[1]).slice(0, n).map((x) => x[0]));
+  const keep = top(count(s.tools.map((t) => t.dest)), 13);
+  const dId = (t) => (keep.has(t.dest) ? 'D:' + t.dest : 'D:(khác)');
+  for (const t of s.tools) {
+    const k = skillId(t.inv), d = dId(t);
+    const dn = node(d, { label: keep.has(t.dest) ? t.dest : 'khác', cat: keep.has(t.dest) ? t.cat : 'other', col: 2 });
+    const rt = Math.round((t.resultChars || 0) / 4);
+    dn.calls++; dn.tokens += rt; edge(k, d).tokens += rt; edge('S', k);
+    items.push({ key: 'm:' + t.id, t, path: ['S→' + k, k + '→' + d], dest: d, skill: k });
+  }
+  const subs = (s.subagents || []).filter((x) => x.parentTool != null && s.tools[x.parentTool]);
+  const subKeep = top(count(subs.flatMap((x) => x.tools.map((t) => dId(s.tools[x.parentTool]) + '>' + t.dest))), 10);
+  for (const sub of subs) {
+    const pt = s.tools[sub.parentTool], a = dId(pt), an = nodes.get(a);
+    const st = sub.calls.reduce((x, c) => x + tok(c), 0);
+    an.tokens += st; edge(skillId(pt.inv), a).tokens += st;
+    for (const t of sub.tools) {
+      const raw = a + '>' + t.dest, id = 'A:' + (subKeep.has(raw) ? raw : a + '>(khác)');
+      const n = node(id, { label: subKeep.has(raw) ? t.dest : 'khác', cat: subKeep.has(raw) ? t.cat : 'other', col: 3, parent: a });
+      const rt = Math.round((t.resultChars || 0) / 4);
+      n.calls++; n.tokens += rt; edge(a, id).tokens += rt;
+      items.push({ key: 's:' + (sub.agentId || sub.id) + ':' + t.id, t, path: [a + '→' + id], dest: id, sub: true });
+    }
+  }
+  return { nodes, edges, items };
+}
+
+function flowLayout(m) {
+  const cols = [[], [], [], []];
+  for (const n of m.nodes.values()) cols[n.col].push(n);
+  cols[1].sort((a, b) => (a.cat === 'none') - (b.cat === 'none'));
+  const X = [80, 330, 600, 810], T = 40, gap = 62;
+  const H = Math.max(380, Math.max(cols[1].length, cols[2].length, cols[3].length) * gap + T * 2);
+  const spread = (list) => list.forEach((n, i) => { n.y = T + ((i + 0.5) * (H - 2 * T)) / list.length; });
+  spread(cols[1]);
+  // order destinations by the average height of the skills that call them (fewer crossings)
+  const bary = new Map();
+  for (const it of m.items) if (!it.sub) { const b = bary.get(it.dest) || [0, 0]; b[0] += m.nodes.get(it.skill).y; b[1]++; bary.set(it.dest, b); }
+  cols[2].sort((a, b) => { const p = bary.get(a.id) || [0, 1], q = bary.get(b.id) || [0, 1]; return p[0] / p[1] - q[0] / q[1]; });
+  spread(cols[2]);
+  // subagent targets sit next to their agent node, then get pushed apart
+  const byParent = new Map();
+  for (const n of cols[3]) { if (!byParent.has(n.parent)) byParent.set(n.parent, []); byParent.get(n.parent).push(n); }
+  for (const [p, list] of byParent) list.forEach((n, i) => { n.y = m.nodes.get(p).y + (i - (list.length - 1) / 2) * 56; });
+  cols[3].sort((a, b) => a.y - b.y);
+  for (let i = 0; i < cols[3].length; i++) cols[3][i].y = Math.max(cols[3][i].y, i ? cols[3][i - 1].y + 50 : T);
+  const over = cols[3].length ? cols[3][cols[3].length - 1].y - (H - T) : 0;
+  if (over > 0) cols[3].forEach((n) => (n.y -= over));
+  cols[0].forEach((n) => (n.y = H / 2));
+  for (const n of m.nodes.values()) { n.x = X[n.col]; n.r = n.col === 0 ? 22 : n.col === 1 ? (n.cat === 'none' ? 12 : 16) : 10; }
+  return H;
+}
+
+const bezier = (a, b) => { const dx = (b.x - a.x) * 0.5; return `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}`; };
+
+function flowBuildGraph(m) {
+  const svg = $('#fl-graph'); svg.innerHTML = '';
+  const H = flowLayout(m);
+  svg.setAttribute('viewBox', `0 0 960 ${H}`);
+  const gE = svgEl('g', {}, svg); FLOW.gP = svgEl('g', {}, svg); const gN = svgEl('g', {}, svg);
+  FLOW.nodes = new Map(); FLOW.edges = new Map();
+  for (const e of m.edges.values()) FLOW.edges.set(e.k, svgEl('path', { d: bezier(m.nodes.get(e.a), m.nodes.get(e.b)), class: 'fl-edge', 'stroke-width': 1.5 }, gE));
+  for (const n of m.nodes.values()) {
+    const g = svgEl('g', { transform: `translate(${n.x},${n.y})` }, gN);
+    const halo = svgEl('circle', { r: n.r, fill: catColor(n.cat), opacity: 0, class: 'fl-halo' }, g);
+    const spin = svgEl('circle', { r: n.r + 5, fill: 'none', stroke: catColor(n.cat), 'stroke-width': 2, 'stroke-dasharray': `${(n.r + 5) * 2.2} ${(n.r + 5) * 4}`, class: 'fl-spin', opacity: 0 }, g);
+    const circle = svgEl('circle', { r: n.r, fill: n.cat === 'session' ? 'var(--surface)' : catColor(n.cat), stroke: n.cat === 'session' ? 'var(--text)' : 'var(--surface)', 'stroke-width': 2 }, g);
+    const right = n.col >= 2 && n.cat !== 'agent';
+    const tx = right ? n.r + 8 : 0, ty = n.col === 0 ? n.r + 18 : right ? 4 : -n.r - 16, anchor = right ? 'start' : 'middle';
+    svgEl('text', { x: tx, y: ty, 'text-anchor': anchor, class: 'fl-label' }, g).textContent = clipLabel(n.label, n.col === 0 ? 30 : 26);
+    const meta = svgEl('text', { x: tx, y: ty + 13, 'text-anchor': anchor, class: 'fl-meta' }, g);
+    FLOW.nodes.set(n.id, { g, halo, spin, circle, meta });
+  }
+}
+
+function flowPing(id, err) {
+  const n = FLOW.nodes.get(id); if (!n || REDUCE) return;
+  const h = n.halo.cloneNode(); h.setAttribute('fill', err ? 'var(--bad)' : n.halo.getAttribute('fill')); h.classList.add('fl-ping');
+  n.g.insertBefore(h, n.circle); setTimeout(() => h.remove(), 950);
+}
+function flowFly(pathKeys, cat, done) {
+  const segs = pathKeys.map((k) => FLOW.edges.get(k)).filter(Boolean);
+  if (!segs.length || REDUCE || document.hidden) { done(); return; }
+  const dot = svgEl('circle', { r: 5, fill: catColor(cat) }, FLOW.gP), trail = svgEl('circle', { r: 9, fill: catColor(cat), opacity: 0.25 }, FLOW.gP);
+  let i = 0;
+  const step = () => {
+    const p = segs[i], L = p.getTotalLength(), dur = 600 + L * 1.1, t0 = performance.now();
+    const frame = (now) => {
+      if (!p.isConnected) { dot.remove(); trail.remove(); return; }
+      const k = Math.min(1, (now - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const a = p.getPointAtLength(L * e), b = p.getPointAtLength(Math.max(0, L * e - 10));
+      dot.setAttribute('cx', a.x); dot.setAttribute('cy', a.y); trail.setAttribute('cx', b.x); trail.setAttribute('cy', b.y);
+      if (k < 1) requestAnimationFrame(frame); else if (++i < segs.length) step(); else { dot.remove(); trail.remove(); done(); }
+    };
+    requestAnimationFrame(frame);
+  };
+  step();
+}
+
+function flowUpdateGraph(m) {
+  for (const [id, n] of m.nodes) {
+    const v = FLOW.nodes.get(id); if (!v) continue;
+    const pending = m.items.some((it) => it.dest === id && !it.t.done);
+    v.spin.setAttribute('opacity', pending ? 1 : 0);
+    v.meta.textContent = n.col === 0 ? `${FLOW.s.calls.length} API calls · ${FLOW.s.tools.length} tools` : n.calls ? `${n.calls}× · ${fmt(n.tokens)}` : '';
+    v.g.dataset.tip = `<b>${esc(n.label)}</b>${n.col === 0 ? '' : '<br>' + (n.col === 1 ? `${n.calls} API calls · ${fmt(n.tokens)} tokens` : `${n.calls} lần gọi · ~${fmt(n.tokens)} tokens trả về`)}`;
+  }
+  for (const [k, e] of m.edges) { const p = FLOW.edges.get(k); if (p) { p.setAttribute('stroke-width', Math.min(14, 1.5 + Math.sqrt(e.tokens) / 22)); p.classList.toggle('hot', e.tokens > 0); } }
+  for (const it of m.items) {
+    const prev = FLOW.seen.get(it.key);
+    if (prev === undefined && !FLOW.first) {
+      if (!it.sub) flowPing('S');
+      flowFly(it.path, it.t.cat, () => { if (it.skill) flowPing(it.skill); if (it.t.done) flowPing(it.dest, it.t.isError); });
+    } else if (prev === false && it.t.done) flowPing(it.dest, it.t.isError);
+    FLOW.seen.set(it.key, !!it.t.done);
+  }
+}
+
+function countTo(node, to, f) {
+  const from = +node.dataset.v || 0; node.dataset.v = to;
+  if (REDUCE || from === to) { node.textContent = f(to); return; }
+  const t0 = performance.now();
+  const frame = (now) => { const k = Math.min(1, (now - t0) / 700); node.textContent = f(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(frame); };
+  requestAnimationFrame(frame);
+}
+
+function flowContext(s) {
+  const last = s.calls[s.calls.length - 1];
+  const win = last && /haiku-4|sonnet-4-5|opus-4-5|-3-/.test(last.model || '') ? 2e5 : 1e6;
+  const ctx = last ? last.ctx : 0, pct = ctx / win;
+  const all = [...s.calls, ...(s.subagents || []).flatMap((x) => x.calls)];
+  const cost = all.reduce((a, c) => a + c.cost, 0);
+  const turn = s.turns[s.turns.length - 1];
+  const tc = s.calls.filter((c) => c.turn === turn?.idx);
+  const comp = [tc.reduce((a, c) => a + c.cr, 0), tc.reduce((a, c) => a + c.cw5m + c.cw1h, 0), tc.reduce((a, c) => a + c.in, 0), tc.reduce((a, c) => a + c.out, 0)];
+  $('#fl-ring').setAttribute('stroke-dashoffset', 314.16 * (1 - Math.min(1, pct)));
+  $('#fl-ringpct').textContent = (pct * 100).toFixed(1) + '%';
+  $('#fl-win').textContent = 'của ' + (win >= 1e6 ? win / 1e6 + 'M' : win / 1e3 + 'k');
+  countTo($('#fl-ctx'), ctx, fmt);
+  countTo($('#fl-cost'), cost, (v) => '$' + v.toFixed(3));
+  [...$('#fl-stack').children].forEach((el, i) => { el.style.flexGrow = comp[i]; el.dataset.tip = `${['Cache read', 'Cache write', 'Input mới', 'Output'][i]}: ${fmt(comp[i])}`; });
+  const xs = s.calls.slice(-40).map((c) => c.ctx), sp = $('#fl-spark'); sp.innerHTML = '';
+  if (xs.length > 1) {
+    const max = Math.max(...xs) * 1.05, min = Math.min(...xs) * 0.95;
+    const pts = xs.map((v, i) => [5 + (i * 290) / (xs.length - 1), 55 - ((v - min) / (max - min || 1)) * 48]);
+    svgEl('path', { d: 'M' + pts.map((p) => p.join(',')).join(' L'), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round' }, sp);
+    const p = pts[pts.length - 1]; svgEl('circle', { cx: p[0], cy: p[1], r: 4, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2 }, sp);
+  }
+  $('#fl-calls').textContent = all.length;
+  $('#fl-tools').textContent = s.tools.length + (s.subagents || []).reduce((a, x) => a + x.tools.length, 0);
+  const sk = last && last.inv != null ? s.invocations[last.inv]?.skill : null;
+  $('#fl-skill').innerHTML = sk ? `<span style="color:var(--c-skill)">⚡ ${esc(sk)}</span>` : '–';
+  const ev = [...s.calls.map((c) => ({ ts: c.ts, key: 'c' + c.idx, html: `<b>API</b> · ctx ${fmt(c.ctx)} · out ${fmt(c.out)}` })),
+    ...s.tools.map((t) => ({ ts: t.ts, key: 't' + t.idx + (t.done ? 'd' : ''), html: `<b>${esc(t.dest)}</b> ${!t.done ? '<span class="dim">· đang chạy</span>' : t.isError ? '<span class="err">lỗi</span>' : `<span class="dim">· ${dur(t.durationMs)} · ~${fmt((t.resultChars || 0) / 4)} tok</span>`}` }))]
+    .sort((a, b) => String(b.ts).localeCompare(String(a.ts))).slice(0, 8);
+  $('#fl-ticker').innerHTML = ev.map((e) => `<div class="fl-tick ${!FLOW.first && !FLOW.ticks.has(e.key) ? 'new' : ''}"><span class="fl-t">${clock(e.ts)}</span><span>${e.html}</span></div>`).join('');
+  for (const e of ev) FLOW.ticks.add(e.key);
+}
+
+function flowRows(s) {
+  const turn = s.turns[s.turns.length - 1]; if (!turn) return { rows: [], t0: 0, now: Date.now() };
+  const t0 = Date.parse(turn.ts), now = Date.now();
+  const end = (t) => (t.done ? Date.parse(t.ts) + Math.max(0, t.durationMs || 0) : now);
+  const runRows = (run, filter, base, indent) => {
+    const calls = run.calls.filter(filter), tools = run.tools.filter(filter), rows = [];
+    for (const c of calls) {
+      const ce = Date.parse(c.ts);
+      const prev = [base, ...calls.map((x) => Date.parse(x.ts)).filter((x) => x < ce), ...tools.map(end).filter((x) => x <= ce)];
+      rows.push({ k: 'API', label: c.model || 'model', cat: 'api', s: Math.max(...prev), e: ce, done: true, ind: indent });
+    }
+    for (const t of tools) rows.push({ k: t.cat === 'agent' ? 'Subagent' : t.cat === 'skill' ? 'Skill' : 'Tool', label: t.dest, cat: t.cat, s: Date.parse(t.ts), e: end(t), done: !!t.done, err: t.isError, ind: indent, tool: t });
+    rows.sort((a, b) => a.s - b.s || (a.k === 'API') - (b.k === 'API'));
+    return rows;
+  };
+  const out = [];
+  for (const r of runRows(s, (x) => x.turn === turn.idx, t0, '')) {
+    out.push(r);
+    const sub = r.tool && (s.subagents || []).find((x) => x.parentTool === r.tool.idx);
+    if (sub) out.push(...runRows(sub, () => true, r.s, '↳ '));
+  }
+  return { rows: out.slice(-14), t0, now };
+}
+
+function flowDrawWF() {
+  const s = FLOW.s, svg = $('#fl-wf'); if (!s || !svg) return;
+  const { rows, t0, now } = flowRows(s);
+  svg.innerHTML = '';
+  if (!rows.length) { svg.setAttribute('viewBox', '0 0 960 40'); svgEl('text', { x: 0, y: 24, class: 'fl-axis' }, svg).textContent = 'Lượt hiện tại chưa có sự kiện nào'; return; }
+  const running = rows.some((r) => !r.done);
+  const from = Math.min(...rows.map((r) => r.s)), to = Math.max(running ? now : 0, ...rows.map((r) => r.e));
+  const a0 = (from - t0) / 1e3, span = Math.max(10, ((to - from) / 1e3) * 1.08);
+  const L = 230, W = 960 - L - 50, rowH = 24, top = 20, H = top + rows.length * rowH + 8;
+  svg.setAttribute('viewBox', `0 0 960 ${H}`);
+  const stepS = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800].find((x) => span / x <= 8) || 3600;
+  for (let s2 = Math.ceil(a0 / stepS) * stepS; s2 <= a0 + span; s2 += stepS) {
+    const x = L + ((s2 - a0) / span) * W;
+    svgEl('line', { x1: x, x2: x, y1: top - 6, y2: H - 6, stroke: 'var(--border)' }, svg);
+    svgEl('text', { x, y: top - 9, 'text-anchor': 'middle', class: 'fl-axis' }, svg).textContent = s2 >= 60 ? Math.floor(s2 / 60) + 'm' + (s2 % 60 ? String(s2 % 60).padStart(2, '0') : '') : s2 + 's';
+  }
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    svgEl('text', { x: 0, y: y + 15, class: 'fl-rowlabel' }, svg).textContent = clipLabel(`${r.ind}${r.k} · ${r.label}`, 36);
+    const x = L + ((r.s - from) / 1e3 / span) * W, w = Math.max(3, ((r.e - r.s) / 1e3 / span) * W);
+    const bar = svgEl('rect', { x, y: y + 5, width: w, height: 13, rx: 3, fill: r.err ? 'var(--bad)' : r.cat === 'api' ? 'var(--c-skill)' : catColor(r.cat), opacity: r.cat === 'api' ? 0.5 : 1 }, svg);
+    if (!r.done) bar.setAttribute('class', 'fl-breathe');
+    bar.dataset.tip = `<b>${esc(r.k)} · ${esc(r.label)}</b><br>${((r.e - r.s) / 1e3).toFixed(1)}s${r.done ? '' : ' · đang chạy'}${r.err ? ' · lỗi' : ''}`;
+    svgEl('text', { x: x + w + 6, y: y + 15, class: 'fl-axis' }, svg).textContent = ((r.e - r.s) / 1e3).toFixed(1) + 's' + (r.done ? '' : '…');
+  });
+  if (running) { const nx = L + ((now - from) / 1e3 / span) * W; svgEl('line', { x1: nx, x2: nx, y1: top - 6, y2: H - 6, stroke: 'var(--bad)', 'stroke-width': 1.5 }, svg); }
+}
+
+function flowShell(D, s) {
+  const recent = [...D.sessions].sort((a, b) => String(lastTs(b)).localeCompare(String(lastTs(a)))).slice(0, 6);
+  if (!recent.includes(s)) recent.unshift(s);
+  const chips = recent.map((x) => { const st = liveState(x).status; return `<button class="fl-chip ${x === s ? 'on' : ''}" data-flow-session="${esc(x.id)}"><span class="dot ${st}"></span>${esc(clipLabel(x.title || x.id.slice(0, 8), 34))}${st === 'off' ? ` <span class="dim">(${ago(lastTs(x))} trước)</span>` : ''}</button>`; }).join('');
+  const L = (c, t) => `<span><i style="background:var(--c-${c})"></i>${t}</span>`;
+  return `<div id="flow-root" data-sid="${esc(s.id)}">
+    <div class="fl-chips"><span class="dim">Session:</span>${chips}</div>
+    <div class="fl-layout">
+      <div class="card"><h3>Luồng gọi</h3>
+        <div class="dim" style="font-size:12px;margin-bottom:6px">Session → skill → nơi được gọi. Mỗi chấm sáng là một tool call đang đi; đường càng dày càng tốn token; vòng xoay = đang chờ kết quả.</div>
+        <div class="fl-legend">${L('skill', 'Skill')}${L('mcp', 'MCP')}${L('web', 'Web')}${L('shell', 'Shell')}${L('file', 'File')}${L('search', 'Tìm kiếm')}${L('agent', 'Subagent')}<span><i style="background:var(--bad)"></i>Lỗi</span></div>
+        <svg id="fl-graph" class="fl-graph" role="img" aria-label="Sơ đồ luồng gọi của session"></svg>
+      </div>
+      <div class="card"><h3>Context &amp; token</h3><div class="dim" style="font-size:12px;margin-bottom:8px">Cập nhật sau mỗi API call</div>
+        <div class="fl-gauge">
+          <svg width="120" height="120" viewBox="0 0 120 120" aria-label="Mức dùng context window">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-2)" stroke-width="10"/>
+            <circle id="fl-ring" cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16" transform="rotate(-90 60 60)" style="transition: stroke-dashoffset .8s ease"/>
+            <text id="fl-ringpct" x="60" y="58" text-anchor="middle" font-size="20" font-weight="650" fill="var(--text)">0%</text>
+            <text id="fl-win" x="60" y="76" text-anchor="middle" font-size="10" fill="var(--text-3)"></text>
+          </svg>
+          <div><div class="fl-big" id="fl-ctx">0</div><div class="dim" style="font-size:12px">tokens trong context</div>
+            <div class="fl-big" style="font-size:22px;margin-top:6px" id="fl-cost">$0</div><div class="dim" style="font-size:12px">chi phí ước tính session</div></div>
+        </div>
+        <div style="margin-top:12px;font-size:12px" class="muted">Cơ cấu token lượt này</div>
+        <div class="fl-stack" id="fl-stack"><span style="background:var(--t1)"></span><span style="background:var(--t2)"></span><span style="background:var(--t3)"></span><span style="background:var(--t4)"></span></div>
+        <div class="fl-tlegend"><span><i style="background:var(--t1)"></i>Cache read</span><span><i style="background:var(--t2)"></i>Cache write</span><span><i style="background:var(--t3)"></i>Input mới</span><span><i style="background:var(--t4)"></i>Output</span></div>
+        <svg id="fl-spark" viewBox="0 0 300 60" style="width:100%;height:60px;margin-top:10px" aria-label="Context theo từng API call"></svg>
+        <div class="fl-kv"><span>API calls</span><span id="fl-calls">0</span><span>Tool calls</span><span id="fl-tools">0</span><span>Skill đang chạy</span><span id="fl-skill">–</span></div>
+        <div class="fl-ticker" id="fl-ticker"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px"><div class="fl-wfhead"><h3>Timeline lượt hiện tại</h3><span class="dim" style="font-size:12px">Thanh đang dài ra = tool chưa xong · vạch đỏ = hiện tại · 14 sự kiện gần nhất</span></div>
+      <svg id="fl-wf" class="fl-graph" aria-label="Timeline các API call và tool call"></svg></div>
+  </div>`;
+}
+
+function flowRender(D) {
+  const app = $('#app');
+  if (!D.sessions.length) { app.innerHTML = '<div class="empty">Không có session nào trong bộ lọc hiện tại.</div>'; return; }
+  const byRecent = [...D.sessions].sort((a, b) => String(lastTs(b)).localeCompare(String(lastTs(a))));
+  const s = D.sessions.find((x) => x.id === state.flowSession) || byRecent[0];
+  const root = $('#flow-root');
+  if (!root || root.dataset.sid !== s.id) {
+    app.innerHTML = flowShell(D, s);
+    FLOW.sig = ''; FLOW.seen = new Map(); FLOW.ticks = new Set(); FLOW.first = true;
+  } else {
+    const tmp = document.createElement('div'); tmp.innerHTML = flowShell(D, s);
+    root.querySelector('.fl-chips').replaceWith(tmp.querySelector('.fl-chips'));
+  }
+  FLOW.s = s;
+  const m = flowModel(s);
+  const sig = [...m.nodes.keys()].sort().join('|');
+  if (sig !== FLOW.sig) { flowBuildGraph(m); FLOW.sig = sig; }
+  flowUpdateGraph(m);
+  flowContext(s);
+  flowDrawWF();
+  FLOW.first = false;
+  if (!FLOW.timer) FLOW.timer = setInterval(() => { if (state.tab === 'flow' && !document.hidden) flowDrawWF(); }, REDUCE ? 1000 : 250);
+}
+function flowStop() { if (FLOW.timer) { clearInterval(FLOW.timer); FLOW.timer = null; } }
+
 /* ---------- shell ---------- */
 function render() {
   if (!RAW) return;
   const D = build(RAW);
   for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.tab === state.tab);
+  if (state.tab === 'flow' && RAW.sessions.length) { flowRender(D); save(); return; }
+  flowStop();
   const v = { overview: viewOverview, live: viewLive, skills: viewSkills, dests: viewDests, sessions: viewSessions }[state.tab] || viewOverview;
   const open = new Set([...document.querySelectorAll('#app details[data-k]')].filter((d) => d.open).map((d) => d.dataset.k));
   const keepOpen = document.querySelectorAll('#app details[data-k]').length > 0;
@@ -538,6 +878,8 @@ $('#app').addEventListener('click', (e) => {
     const id = th.closest('table').dataset.tid, k = th.dataset.k, cur = state.sort[id];
     state.sort[id] = { k, d: cur && cur.k === k ? -cur.d : -1 }; render(); return;
   }
+  const fs = e.target.closest('[data-flow-session]');
+  if (fs) { state.flowSession = fs.dataset.flowSession; render(); return; }
   const cat = e.target.closest('[data-cat]');
   if (cat) { state.cat = cat.dataset.cat && state.cat !== cat.dataset.cat ? cat.dataset.cat : null; render(); return; }
   const tr = e.target.closest('tr[data-id]');
