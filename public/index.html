@@ -60,6 +60,11 @@ th.num, td.num { text-align: right; }
 tbody tr.click { cursor: pointer; }
 tbody tr.click:hover, tbody tr.sel { background: var(--surface-2); }
 .scroll { overflow: auto; max-height: 560px; }
+.wide { overflow-x: auto; }
+.click-cat { cursor: pointer; }
+.click-cat:hover { border-color: var(--text-3); }
+.sel-cat { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+a.link { color: var(--accent); cursor: pointer; font-weight: 400; }
 .mono { font-family: var(--mono); font-size: 12.5px; }
 .muted { color: var(--text-2); }
 .dim { color: var(--text-3); }
@@ -207,7 +212,7 @@ function sortable(id, cols, rows, opts = {}) {
   const val = (r) => col?.v ? col.v(r) : r[st.k];
   const sorted = [...rows].sort((a, b) => { const x = val(a), y = val(b); return (typeof x === 'string' ? x.localeCompare(y) : (x || 0) - (y || 0)) * st.d; });
   const lim = opts.limit || 500;
-  return `<div class="scroll"><table data-tid="${id}"><thead><tr>${cols.map((c) => `<th data-k="${c.k}" class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.h}${st.k === c.k ? (st.d < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('')}</tr></thead><tbody>${
+  return `<div class="${opts.full ? 'wide' : 'scroll'}"><table data-tid="${id}"><thead><tr>${cols.map((c) => `<th data-k="${c.k}" class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.h}${st.k === c.k ? (st.d < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('')}</tr></thead><tbody>${
     sorted.slice(0, lim).map((r) => `<tr class="${opts.click ? 'click' : ''} ${opts.sel && opts.sel(r) ? 'sel' : ''}" ${opts.click ? `data-id="${esc(opts.click(r))}"` : ''}>${cols.map((c) => `<td class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.f ? c.f(r) : esc(r[c.k])}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}" class="empty">Không có dữ liệu</td></tr>`
   }</tbody></table></div>${sorted.length > lim ? `<div class="dim" style="margin-top:6px">Hiển thị ${lim}/${sorted.length}</div>` : ''}`;
 }
@@ -303,7 +308,7 @@ function invRows(list) {
   ], list, { sortKey: 'ts', click: (r) => r.key, sel: (r) => r.key === state.inv });
 }
 
-function destTable(tools, id) {
+function destTable(tools, id, full) {
   const rows = group(tools, (t) => t.dest, (k) => ({ dest: k, cat: '', n: 0, err: 0, chars: 0, ms: 0, msN: 0, skills: new Map(), sample: '' }),
     (r, t) => { r.cat = t.cat; r.n++; if (t.isError) r.err++; r.chars += t.resultChars || 0; if (t.durationMs > 0) { r.ms += t.durationMs; r.msN++; } r.skills.set(t.skill, (r.skills.get(t.skill) || 0) + 1); if (!r.sample) r.sample = t.detail || t.target; });
   const max = Math.max(...rows.map((r) => r.n), 0);
@@ -316,7 +321,7 @@ function destTable(tools, id) {
     { k: 'chars', h: '~Tokens trả về', num: 1, f: (r) => fmt(r.chars / 4) },
     { k: 'avg', h: 'TB thời gian', num: 1, v: (r) => r.msN ? r.ms / r.msN : 0, f: (r) => dur(r.msN ? Math.round(r.ms / r.msN) : 0) },
     { k: 'sk', h: 'Từ skill', cls: 'hide-sm', v: (r) => r.skills.size, f: (r) => [...r.skills].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([s, n]) => `<span class="tag ${s === NOSKILL ? '' : 'skill'}">${esc(s)} ×${n}</span>`).join(' ') },
-  ], rows, { sortKey: 'n' });
+  ], rows, { sortKey: 'n', full });
 }
 
 function viewSkills(D) {
@@ -375,10 +380,16 @@ function invTimeline(inv) {
 }
 
 function viewDests(D) {
-  const cats = group(D.tools, (t) => t.cat, (k) => ({ cat: k, n: 0 }), (r) => r.n++).sort((a, b) => b.n - a.n);
-  return `<div class="card"><h3>Tất cả nơi Claude gọi tới (tool, MCP server, web, shell, subagent, skill)</h3>
-    <div class="legend">${cats.map((c) => `<span class="tag">${esc(c.cat)} · ${c.n}</span>`).join('')}</div>
-    ${destTable(D.tools, 'dests')}
+  const cats = group(D.tools, (t) => t.cat, (k) => ({ cat: k, n: 0, err: 0, chars: 0, dests: new Set() }),
+    (r, t) => { r.n++; if (t.isError) r.err++; r.chars += t.resultChars || 0; r.dests.add(t.dest); }).sort((a, b) => b.n - a.n);
+  if (state.cat && !cats.some((c) => c.cat === state.cat)) state.cat = null;
+  const tools = state.cat ? D.tools.filter((t) => t.cat === state.cat) : D.tools;
+  const LBL = { shell: 'Lệnh shell', file: 'Đọc/ghi file', search: 'Tìm kiếm code', web: 'Web', mcp: 'MCP server', agent: 'Subagent', skill: 'Skill', other: 'Tool khác' };
+  return `<div class="grid kpis">${cats.map((c) => `<div class="card kpi click-cat ${state.cat === c.cat ? 'sel-cat' : ''}" data-cat="${esc(c.cat)}" role="button" tabindex="0">
+      <div class="v">${c.n}</div><div class="l">${esc(LBL[c.cat] || c.cat)} · ${c.dests.size} đích${c.err ? ` · <span class="err">${c.err} lỗi</span>` : ''}</div>
+      <div class="l dim">~${fmt(c.chars / 4)} tokens trả về</div></div>`).join('') || '<div class="card empty">Chưa có tool call nào</div>'}</div>
+    <div class="card" style="margin-top:12px"><h3>${state.cat ? `Đích loại <span class="tag">${esc(LBL[state.cat] || state.cat)}</span> · <a class="link" data-cat="">bỏ lọc</a>` : 'Tất cả nơi Claude gọi tới — bấm một ô phía trên để lọc theo loại'}</h3>
+    ${destTable(tools, 'dests', true)}
     <div class="dim" style="margin-top:8px;font-size:12px">"~Tokens trả về" ≈ kích thước kết quả tool / 4 — phần này bị đưa vào context và tính tiền ở mọi lượt sau.</div></div>`;
 }
 
@@ -444,6 +455,8 @@ $('#app').addEventListener('click', (e) => {
     const id = th.closest('table').dataset.tid, k = th.dataset.k, cur = state.sort[id];
     state.sort[id] = { k, d: cur && cur.k === k ? -cur.d : -1 }; render(); return;
   }
+  const cat = e.target.closest('[data-cat]');
+  if (cat) { state.cat = cat.dataset.cat && state.cat !== cat.dataset.cat ? cat.dataset.cat : null; render(); return; }
   const tr = e.target.closest('tr[data-id]');
   if (!tr) return;
   const tid = tr.closest('table').dataset.tid, id = tr.dataset.id;
