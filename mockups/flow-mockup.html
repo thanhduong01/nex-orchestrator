@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flow mockup</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --surface: #ffffff; --surface-2: #f0f0ed; --border: #e2e2dd;
+  --text: #191919; --text-2: #666666; --text-3: #8a8a85; --accent: #257de0;
+  /* destination categories — fixed order from the validated palette */
+  --c-skill: #257de0; --c-mcp: #f47230; --c-web: #00b894; --c-shell: #f2a600;
+  --c-file: #ee7fac; --c-agent: #008a17; --c-search: #6a4ce2;
+  --bad: #c8352f; --good: #1d7a32;
+  /* single-hue ramp for token composition */
+  --t1: #b9d6f7; --t2: #7fb2ee; --t3: #3f88dd; --t4: #1d5aa6;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121212; --surface: #191919; --surface-2: #222222; --border: #2e2e2e;
+    --text: #efefef; --text-2: #9c9c9c; --text-3: #7a7a7a; --accent: #338ced;
+    --c-skill: #338ced; --c-mcp: #e76624; --c-web: #00a888; --c-shell: #d28e05;
+    --c-file: #e24d8b; --c-agent: #0aac23; --c-search: #9887ef;
+    --bad: #f07070; --good: #4cc463;
+    --t1: #1f3f66; --t2: #2d5f99; --t3: #4f8fdb; --t4: #9cc4f3;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121212; --surface: #191919; --surface-2: #222222; --border: #2e2e2e;
+  --text: #efefef; --text-2: #9c9c9c; --text-3: #7a7a7a; --accent: #338ced;
+  --c-skill: #338ced; --c-mcp: #e76624; --c-web: #00a888; --c-shell: #d28e05;
+  --c-file: #e24d8b; --c-agent: #0aac23; --c-search: #9887ef;
+  --bad: #f07070; --good: #4cc463;
+  --t1: #1f3f66; --t2: #2d5f99; --t3: #4f8fdb; --t4: #9cc4f3;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { border-bottom: 1px solid var(--border); }
+.bar { max-width: 1320px; margin: 0 auto; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.brand { font-weight: 650; } .brand small { color: var(--text-3); font-weight: 400; margin-left: 6px; }
+nav { display: flex; max-width: 100%; overflow-x: auto; gap: 2px; background: var(--surface-2); border-radius: 8px; padding: 3px; }
+nav span { white-space: nowrap; padding: 6px 12px; border-radius: 6px; color: var(--text-2); }
+nav span.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.mock { margin-left: auto; font-size: 12px; color: var(--text-3); border: 1px dashed var(--border); padding: 4px 8px; border-radius: 6px; }
+main { max-width: 1320px; margin: 0 auto; padding: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.sub { font-size: 12px; color: var(--text-3); margin-bottom: 8px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+.chip.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); display: inline-block; }
+.dot.on { background: var(--good); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 55%, transparent); } 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 12px; }
+@media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); margin: 4px 0 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+#graph { width: 100%; height: auto; display: block; }
+.node-label { font-size: 12px; fill: var(--text); }
+.node-meta { font-size: 10.5px; fill: var(--text-3); font-family: var(--mono); }
+.edge { fill: none; stroke: var(--border); stroke-linecap: round; transition: stroke-width .6s ease; }
+.edge.hot { stroke: color-mix(in srgb, var(--text-3) 55%, transparent); }
+.halo { transform-box: fill-box; transform-origin: center; }
+.ping { animation: ping .9s ease-out; }
+@keyframes ping { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(2.3); } }
+.breathe { animation: breathe 1.8s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .35; } }
+.ring-spin { transform-box: fill-box; transform-origin: center; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.gauge-wrap { display: flex; gap: 14px; align-items: center; }
+.big { font-size: 28px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 13px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.kv span:nth-child(odd) { color: var(--text-2); }
+.stack { display: flex; height: 14px; gap: 2px; margin: 8px 0 4px; }
+.stack span { display: block; height: 100%; transition: flex-grow .7s ease; min-width: 2px; }
+.stack span:first-child { border-radius: 4px 0 0 4px; } .stack span:last-child { border-radius: 0 4px 4px 0; }
+.tlegend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-2); }
+.tlegend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.ticker { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; max-height: 180px; overflow: hidden; }
+.tick { display: flex; gap: 8px; font-size: 12.5px; padding: 3px 0; align-items: baseline; animation: slidein .45s ease-out; }
+.tick .t { font-family: var(--mono); color: var(--text-3); font-size: 11.5px; }
+.tick b { font-weight: 600; }
+.tick .err { color: var(--bad); }
+@keyframes slidein { from { opacity: 0; transform: translateY(-8px); } }
+.wf-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+#wf { width: 100%; height: auto; display: block; }
+.wf-label { font-size: 11.5px; fill: var(--text-2); }
+.wf-axis { font-size: 10px; fill: var(--text-3); }
+.note { margin-top: 16px; font-size: 12.5px; color: var(--text-2); }
+.phase { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); margin-left: 6px; }
+.tip { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.12); display: none; z-index: 9; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand">nex-trace<small>Claude run tracker</small></div>
+  <nav><span>Overview</span><span>Live</span><span class="on">Flow</span><span>Skills</span><span>Tool Calls</span><span>Sessions</span></nav>
+  <span class="mock">MOCKUP · dữ liệu giả lập</span>
+  <button id="theme" style="font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer">Sáng/Tối</button>
+</div></header>
+<main>
+  <div class="chips">
+    <span class="sub" style="margin:0">Session:</span>
+    <span class="chip on"><span class="dot on"></span>Thêm trang checkout</span>
+    <span class="chip"><span class="dot on"></span>Refactor auth</span>
+    <span class="chip"><span class="dot"></span>Viết test API (12 phút trước)</span>
+  </div>
+
+  <div class="layout">
+    <div class="card">
+      <h3>Luồng gọi trực tiếp</h3>
+      <div class="sub">Session → skill → nơi được gọi. Mỗi chấm sáng là một tool call đang đi; đường càng dày càng tốn token; vòng xoay = đang chờ kết quả.</div>
+      <div class="legend">
+        <span><i style="background:var(--c-skill)"></i>Skill</span><span><i style="background:var(--c-mcp)"></i>MCP</span>
+        <span><i style="background:var(--c-web)"></i>Web</span><span><i style="background:var(--c-shell)"></i>Shell</span>
+        <span><i style="background:var(--c-file)"></i>File</span><span><i style="background:var(--c-search)"></i>Tìm kiếm</span>
+        <span><i style="background:var(--c-agent)"></i>Subagent</span><span><i style="background:var(--bad)"></i>Lỗi</span>
+      </div>
+      <svg id="graph" viewBox="0 0 960 540" role="img" aria-label="Sơ đồ luồng gọi của session"></svg>
+    </div>
+
+    <div class="card">
+      <h3>Context &amp; token</h3>
+      <div class="sub">Cập nhật sau mỗi API call</div>
+      <div class="gauge-wrap">
+        <svg width="120" height="120" viewBox="0 0 120 120" aria-label="Mức dùng context window">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-2)" stroke-width="10"/>
+          <circle id="ring" cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round"
+            stroke-dasharray="314.16" stroke-dashoffset="314.16" transform="rotate(-90 60 60)" style="transition: stroke-dashoffset .8s ease"/>
+          <text id="ringPct" x="60" y="58" text-anchor="middle" font-size="20" font-weight="650" fill="var(--text)">0%</text>
+          <text x="60" y="76" text-anchor="middle" font-size="10" fill="var(--text-3)">của 1M</text>
+        </svg>
+        <div>
+          <div class="big" id="ctxBig">0</div>
+          <div class="sub" style="margin:0">tokens trong context</div>
+          <div class="big" style="font-size:22px;margin-top:6px" id="costBig">$0.000</div>
+          <div class="sub" style="margin:0">chi phí ước tính session</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-2)">Cơ cấu token lượt này</div>
+      <div class="stack" id="stack">
+        <span style="background:var(--t1)"></span><span style="background:var(--t2)"></span><span style="background:var(--t3)"></span><span style="background:var(--t4)"></span>
+      </div>
+      <div class="tlegend"><span><i style="background:var(--t1)"></i>Cache read</span><span><i style="background:var(--t2)"></i>Cache write</span><span><i style="background:var(--t3)"></i>Input mới</span><span><i style="background:var(--t4)"></i>Output</span></div>
+      <svg id="spark" viewBox="0 0 300 60" style="width:100%;height:60px;margin-top:10px" aria-label="Context theo từng API call"></svg>
+      <div class="kv">
+        <span>API calls</span><span id="kCalls">0</span>
+        <span>Tool calls</span><span id="kTools">0</span>
+        <span>Skill đang chạy</span><span id="kSkill">–</span>
+      </div>
+      <div class="ticker" id="ticker"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="wf-head"><h3>Timeline (waterfall) <span class="phase">giai đoạn 2</span></h3><span class="sub" style="margin:0">Thanh đang dài ra = tool chưa xong · vạch đỏ = hiện tại</span></div>
+    <svg id="wf" viewBox="0 0 960 300" aria-label="Timeline các API call và tool call"></svg>
+  </div>
+
+  <p class="note">Đây là mockup. Mọi số liệu đều giả lập để bạn xem trước bố cục và chuyển động. Bản thật sẽ lấy dữ liệu từ transcript như tab Live.</p>
+</main>
+<div class="tip" id="tip"></div>
+
+<script>
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const fmt = (n) => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n));
+const cssVar = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------------- graph model (mock) ---------------- */
+const N = {
+  session: { x: 80, y: 270, label: 'Thêm trang checkout', cat: 'session', r: 22 },
+  sk_fe:   { x: 330, y: 110, label: 'frontend-design', cat: 'skill', r: 16 },
+  sk_pay:  { x: 330, y: 290, label: 'stripe-payments', cat: 'skill', r: 16 },
+  sk_none: { x: 330, y: 470, label: '(không skill)', cat: 'none', r: 12 },
+  d_grep:  { x: 600, y: 40,  label: 'search:Grep', cat: 'search' },
+  d_edit:  { x: 600, y: 105, label: 'file:Edit', cat: 'file' },
+  d_npm:   { x: 600, y: 170, label: 'shell:npm', cat: 'shell' },
+  d_stripe:{ x: 600, y: 235, label: 'mcp:stripe', cat: 'mcp' },
+  d_web:   { x: 600, y: 300, label: 'web:stripe.com', cat: 'web' },
+  d_agent: { x: 600, y: 365, label: 'agent:Explore', cat: 'agent' },
+  d_git:   { x: 600, y: 445, label: 'shell:git', cat: 'shell' },
+  d_gh:    { x: 600, y: 505, label: 'mcp:github', cat: 'mcp' },
+  a_docs:  { x: 800, y: 335, label: 'web:docs.stripe.com', cat: 'web' },
+  a_read:  { x: 800, y: 400, label: 'file:Read', cat: 'file' },
+};
+for (const n of Object.values(N)) { n.calls = 0; n.tokens = 0; n.r = n.r || 10; }
+const E = [
+  ['session', 'sk_fe'], ['session', 'sk_pay'], ['session', 'sk_none'],
+  ['sk_fe', 'd_edit'], ['sk_fe', 'd_grep'], ['sk_fe', 'd_npm'],
+  ['sk_pay', 'd_stripe'], ['sk_pay', 'd_web'], ['sk_pay', 'd_npm'], ['sk_pay', 'd_agent'], ['sk_pay', 'd_edit'],
+  ['sk_none', 'd_git'], ['sk_none', 'd_gh'],
+  ['d_agent', 'a_docs'], ['d_agent', 'a_read'],
+].map(([a, b]) => ({ a, b, tokens: 0 }));
+const edgeOf = (a, b) => E.find((e) => e.a === a && e.b === b);
+const color = (cat) => ({ session: 'var(--text)', none: 'var(--text-3)' }[cat] || `var(--c-${cat})`);
+
+const g = document.getElementById('graph');
+const gEdges = el('g', {}, g), gParticles = el('g', {}, g), gNodes = el('g', {}, g);
+const path = (a, b) => { const dx = (b.x - a.x) * 0.5; return `M${a.x},${a.y} C${a.x + dx},${a.y} ${b.x - dx},${b.y} ${b.x},${b.y}`; };
+for (const e of E) { e.el = el('path', { d: path(N[e.a], N[e.b]), class: 'edge', 'stroke-width': 1.5 }, gEdges); }
+for (const [id, n] of Object.entries(N)) {
+  const grp = el('g', { transform: `translate(${n.x},${n.y})`, style: 'cursor:default' }, gNodes);
+  n.halo = el('circle', { r: n.r, fill: color(n.cat), opacity: 0, class: 'halo' }, grp);
+  n.spin = el('circle', { r: n.r + 5, fill: 'none', stroke: color(n.cat), 'stroke-width': 2, 'stroke-dasharray': `${(n.r + 5) * 2.2} ${(n.r + 5) * 4}`, class: 'ring-spin', opacity: 0 }, grp);
+  n.circle = el('circle', { r: n.r, fill: n.cat === 'session' ? 'var(--surface)' : color(n.cat), stroke: n.cat === 'session' ? 'var(--text)' : 'var(--surface)', 'stroke-width': 2 }, grp);
+  const right = n.cat !== 'session' && n.cat !== 'skill' && n.cat !== 'none' && n.cat !== 'agent';
+  const tx = n.cat === 'session' ? 0 : right ? n.r + 8 : 0, ty = n.cat === 'session' ? n.r + 18 : right ? 4 : -n.r - 16;
+  const anchor = n.cat === 'session' || !right ? 'middle' : 'start';
+  el('text', { x: tx, y: ty, 'text-anchor': anchor, class: 'node-label' }, grp).textContent = n.label;
+  n.meta = el('text', { x: tx, y: ty + 13, 'text-anchor': anchor, class: 'node-meta' }, grp);
+  grp.addEventListener('mousemove', (ev) => showTip(ev, `<b>${n.label}</b><br>${n.calls} lần gọi · ~${fmt(n.tokens)} tokens`));
+  grp.addEventListener('mouseleave', hideTip);
+}
+function refreshNode(n) { n.meta.textContent = n.cat === 'session' ? `${S.calls} API calls · ${S.tools} tools` : n.calls ? `${n.calls}× · ${fmt(n.tokens)}` : ''; }
+function ping(n, err) {
+  if (reduce) return;
+  const h = n.halo.cloneNode(); h.setAttribute('fill', err ? 'var(--bad)' : color(n.cat)); h.classList.add('ping');
+  n.halo.parentNode.insertBefore(h, n.circle); setTimeout(() => h.remove(), 950);
+}
+function bump(e, t) { e.tokens += t; e.el.setAttribute('stroke-width', Math.min(14, 1.5 + Math.sqrt(e.tokens) / 22)); e.el.classList.add('hot'); }
+
+/* particles travel along one or more edges */
+function fly(edges, cat, err, done) {
+  const segs = edges.map((e) => e.el); let i = 0;
+  const dot = el('circle', { r: 5, fill: err ? 'var(--bad)' : color(cat) }, gParticles);
+  const trail = el('circle', { r: 9, fill: err ? 'var(--bad)' : color(cat), opacity: .25 }, gParticles);
+  const step = () => {
+    const p = segs[i], L = p.getTotalLength(), dur = reduce ? 1 : 700 + L * 1.2, t0 = performance.now();
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const pt = p.getPointAtLength(L * e); dot.setAttribute('cx', pt.x); dot.setAttribute('cy', pt.y);
+      const pt2 = p.getPointAtLength(Math.max(0, L * e - 10)); trail.setAttribute('cx', pt2.x); trail.setAttribute('cy', pt2.y);
+      if (k < 1) requestAnimationFrame(tick); else if (++i < segs.length) step(); else { dot.remove(); trail.remove(); done && done(); }
+    };
+    requestAnimationFrame(tick);
+  };
+  step();
+}
+
+/* ---------------- context panel ---------------- */
+const S = { ctx: 41800, cost: 0.071, calls: 2, tools: 0, series: [38000, 41800], comp: [36000, 3000, 900, 1200], skill: 'stripe-payments' };
+const ring = document.getElementById('ring');
+function animateNumber(id, to, f) {
+  const node = document.getElementById(id), from = +node.dataset.v || 0, t0 = performance.now(), d = reduce ? 1 : 700;
+  const tick = (now) => { const k = Math.min(1, (now - t0) / d), v = from + (to - from) * (1 - Math.pow(1 - k, 3)); node.textContent = f(v); if (k < 1) requestAnimationFrame(tick); };
+  node.dataset.v = to; requestAnimationFrame(tick);
+}
+function drawContext() {
+  const pct = S.ctx / 1e6;
+  ring.setAttribute('stroke-dashoffset', 314.16 * (1 - pct));
+  document.getElementById('ringPct').textContent = (pct * 100).toFixed(1) + '%';
+  animateNumber('ctxBig', S.ctx, fmt);
+  animateNumber('costBig', S.cost, (v) => '$' + v.toFixed(3));
+  [...document.getElementById('stack').children].forEach((s, i) => (s.style.flexGrow = S.comp[i]));
+  document.getElementById('kCalls').textContent = S.calls;
+  document.getElementById('kTools').textContent = S.tools;
+  document.getElementById('kSkill').innerHTML = S.skill ? `<span style="color:var(--c-skill)">⚡ ${S.skill}</span>` : '–';
+  const sp = document.getElementById('spark'); sp.innerHTML = '';
+  const xs = S.series.slice(-30), max = Math.max(...xs) * 1.1, min = Math.min(...xs) * 0.9;
+  const pts = xs.map((v, i) => [5 + (i * 290) / Math.max(1, xs.length - 1), 55 - ((v - min) / (max - min || 1)) * 48]);
+  el('path', { d: 'M' + pts.map((p) => p.join(',')).join(' L'), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round' }, sp);
+  const last = pts[pts.length - 1]; el('circle', { cx: last[0], cy: last[1], r: 4, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2 }, sp);
+}
+function addTick(html) {
+  const t = document.getElementById('ticker'), d = document.createElement('div'); d.className = 'tick';
+  d.innerHTML = `<span class="t">${new Date().toLocaleTimeString('vi-VN', { hour12: false })}</span><span>${html}</span>`;
+  t.prepend(d); while (t.children.length > 8) t.lastChild.remove();
+}
+
+/* ---------------- waterfall (phase 2) ---------------- */
+const wf = document.getElementById('wf');
+const WF = { t0: performance.now() - 26000, rows: [] };
+const preset = [
+  ['API', 'claude-opus-5-5', 'skill', 0, 2.1], ['Skill', 'stripe-payments', 'skill', 2.1, 0.3], ['API', 'claude-opus-5-5', 'skill', 2.4, 3.2],
+  ['Tool', 'mcp:stripe list_products', 'mcp', 5.6, 1.8], ['Tool', 'web:stripe.com', 'web', 5.6, 2.6], ['API', 'claude-opus-5-5', 'skill', 8.3, 4.1],
+  ['Subagent', 'agent:Explore', 'agent', 12.4, 9.5], ['  ↳ Tool', 'web:docs.stripe', 'web', 13.2, 2.2], ['  ↳ Tool', 'file:Read', 'file', 15.6, 0.4],
+  ['Tool', 'file:Edit', 'file', 22.0, 0.3], ['Tool', 'shell:npm run build', 'shell', 22.5, null],
+];
+for (const [k, label, cat, s, d] of preset) WF.rows.push({ k, label, cat, s, d });
+function drawWF() {
+  const now = (performance.now() - WF.t0) / 1000, span = Math.max(30, Math.ceil(now / 10) * 10 + 5);
+  const L = 220, W = 960 - L - 10, rowH = 24, top = 18;
+  const rows = WF.rows.slice(-11);
+  wf.setAttribute('viewBox', `0 0 960 ${top + rows.length * rowH + 24}`);
+  wf.innerHTML = '';
+  for (let s = 0; s <= span; s += 5) { const x = L + (s / span) * W; el('line', { x1: x, x2: x, y1: top - 6, y2: top + rows.length * rowH, stroke: 'var(--border)' }, wf); el('text', { x, y: top - 8, 'text-anchor': 'middle', class: 'wf-axis' }, wf).textContent = s + 's'; }
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    el('text', { x: 0, y: y + 15, class: 'wf-label' }, wf).textContent = `${r.k} · ${r.label}`.slice(0, 34);
+    const x = L + (r.s / span) * W, d = r.d == null ? now - r.s : r.d, w = Math.max(3, (d / span) * W);
+    const bar = el('rect', { x, y: y + 5, width: w, height: 13, rx: 3, fill: color(r.cat), opacity: r.k === 'API' ? .55 : 1 }, wf);
+    if (r.d == null) { bar.setAttribute('class', 'breathe'); el('text', { x: x + w + 6, y: y + 15, class: 'wf-axis' }, wf).textContent = d.toFixed(1) + 's…'; }
+    else el('text', { x: x + w + 6, y: y + 15, class: 'wf-axis' }, wf).textContent = d.toFixed(1) + 's';
+  });
+  const nx = L + (now / span) * W; el('line', { x1: nx, x2: nx, y1: top - 6, y2: top + rows.length * rowH, stroke: 'var(--bad)', 'stroke-width': 1.5 }, wf);
+}
+
+/* ---------------- simulation loop ---------------- */
+const plans = [
+  { skill: 'sk_pay', dest: 'd_stripe', tok: 2600, ms: 1800 },
+  { skill: 'sk_pay', dest: 'd_web', tok: 5200, ms: 2400 },
+  { skill: 'sk_pay', dest: 'd_agent', tok: 9000, ms: 4200, sub: ['a_docs', 'a_read'] },
+  { skill: 'sk_pay', dest: 'd_edit', tok: 600, ms: 400 },
+  { skill: 'sk_pay', dest: 'd_npm', tok: 1800, ms: 3000, err: true },
+  { skill: 'sk_fe', dest: 'd_grep', tok: 900, ms: 500 },
+  { skill: 'sk_fe', dest: 'd_edit', tok: 700, ms: 400 },
+  { skill: 'sk_fe', dest: 'd_npm', tok: 1500, ms: 2600 },
+  { skill: 'sk_none', dest: 'd_git', tok: 300, ms: 600 },
+  { skill: 'sk_none', dest: 'd_gh', tok: 1200, ms: 1200 },
+];
+let step = 0;
+function apiCall() {
+  S.calls++; const add = 2500 + Math.random() * 6000; S.ctx += add; S.series.push(S.ctx);
+  S.comp = [S.ctx * 0.86, add * 0.5, add * 0.2, 400 + Math.random() * 1500];
+  S.cost += (S.ctx * 0.2 + add * 8 + S.comp[3] * 20) / 1e6;
+  drawContext();
+  ping(N.session); refreshNode(N.session);
+  addTick(`<b>API</b> · ctx ${fmt(S.ctx)} · out ${fmt(S.comp[3])}`);
+  const r = { k: 'API', label: 'claude-opus-5-5', cat: 'skill', s: (performance.now() - WF.t0) / 1000, d: 1.5 + Math.random() * 2 };
+  WF.rows.push(r);
+}
+function toolCall() {
+  const p = plans[step++ % plans.length], sk = N[p.skill], d = N[p.dest];
+  S.skill = sk.cat === 'skill' ? sk.label : null; S.tools++; refreshNode(N.session);
+  const e1 = edgeOf('session', p.skill), e2 = edgeOf(p.skill, p.dest);
+  const row = { k: d.cat === 'agent' ? 'Subagent' : 'Tool', label: d.label, cat: d.cat, s: (performance.now() - WF.t0) / 1000, d: null };
+  WF.rows.push(row);
+  addTick(`<b>${d.label}</b> ← ${sk.label} <span style="color:var(--text-3)">· đang chạy</span>`);
+  drawContext();
+  fly([e1, e2], d.cat, false, () => {
+    ping(sk); d.spin.setAttribute('opacity', 1);
+    if (p.sub) p.sub.forEach((id, i) => setTimeout(() => fly([edgeOf(p.dest, id)], N[id].cat, false, () => { ping(N[id]); N[id].calls++; N[id].tokens += p.tok / 3; refreshNode(N[id]); bump(edgeOf(p.dest, id), p.tok / 3); }), 400 + i * 900));
+    setTimeout(() => {
+      d.spin.setAttribute('opacity', 0); ping(d, p.err);
+      d.calls++; d.tokens += p.tok; sk.calls++; sk.tokens += p.tok; refreshNode(d); refreshNode(sk);
+      bump(e1, p.tok); bump(e2, p.tok);
+      row.d = (performance.now() - WF.t0) / 1000 - row.s;
+      addTick(p.err ? `<b>${d.label}</b> <span class="err">lỗi</span> sau ${(p.ms / 1000).toFixed(1)}s` : `<b>${d.label}</b> xong · ~${fmt(p.tok)} tok trả về`);
+    }, p.ms);
+  });
+}
+// seed some history so the graph is not empty
+for (const p of plans) { const d = N[p.dest], sk = N[p.skill]; d.calls++; d.tokens += p.tok; sk.calls++; sk.tokens += p.tok; bump(edgeOf('session', p.skill), p.tok); bump(edgeOf(p.skill, p.dest), p.tok); if (p.sub) p.sub.forEach((id) => { N[id].calls++; N[id].tokens += p.tok / 3; bump(edgeOf(p.dest, id), p.tok / 3); }); }
+Object.values(N).forEach(refreshNode);
+drawContext(); drawWF();
+setInterval(toolCall, 1700);
+setInterval(apiCall, 2600);
+setInterval(drawWF, reduce ? 1000 : 100);
+setTimeout(toolCall, 300);
+
+/* tooltip + theme */
+const tip = document.getElementById('tip');
+function showTip(ev, html) { tip.innerHTML = html; tip.style.display = 'block'; tip.style.left = Math.min(ev.clientX + 12, innerWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = ev.clientY + 12 + 'px'; }
+function hideTip() { tip.style.display = 'none'; }
+document.getElementById('theme').onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; };
+</script>
+</body>
+</html>
