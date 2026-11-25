@@ -67,7 +67,9 @@ export function classifyTool(name, input = {}) {
   switch (name) {
     case 'Bash': case 'BashOutput': case 'KillShell': {
       const cmd = String(input.command || '');
-      const first = cmd.replace(/^(cd [^&;]+(&&|;)\s*)+/, '').trim().split(/\s+/)[0] || name;
+      // skip leading `cd x &&`, `VAR=value;` and `VAR=value cmd` prefixes to find the real program
+      const rest = cmd.replace(/^\s*((cd\s+[^&;\n]+|[A-Za-z_][A-Za-z0-9_]*=("[^"]*"|'[^']*'|[^\s;&]*))\s*(&&|;|\n)?\s*)+/, '');
+      const first = rest.trim().split(/\s+/)[0] || name;
       return { cat: 'shell', dest: `shell:${path.basename(first)}`, target: path.basename(first), detail: clip(cmd, 240) };
     }
     case 'Read': case 'Write': case 'Edit': case 'MultiEdit': case 'NotebookEdit': case 'NotebookRead':
@@ -171,6 +173,7 @@ export function parseTranscript(file) {
       for (const r of results) {
         const t = toolById.get(r.tool_use_id);
         if (!t) continue;
+        t.done = true;
         t.isError = !!r.is_error;
         t.resultChars = sizeOf(r.content);
         if (rec.timestamp && t.ts) t.durationMs = Date.parse(rec.timestamp) - Date.parse(t.ts);
@@ -228,7 +231,7 @@ export function parseTranscript(file) {
         if (b?.type !== 'tool_use') continue;
         if (toolById.has(b.id)) continue;
         const c = classifyTool(b.name, b.input);
-        const t = { idx: run.tools.length, id: b.id, ts: rec.timestamp, name: b.name, ...c, turn, call: call.idx, inv: call.inv, isError: false, resultChars: 0, inputChars: JSON.stringify(b.input || {}).length };
+        const t = { idx: run.tools.length, id: b.id, ts: rec.timestamp, name: b.name, ...c, turn, call: call.idx, inv: call.inv, done: false, isError: false, resultChars: 0, inputChars: JSON.stringify(b.input || {}).length };
         toolById.set(b.id, t);
         run.tools.push(t);
         call.tools.push(t.idx);
@@ -260,6 +263,7 @@ export function loadAll(root = defaultRoot(), { since } = {}) {
     if (hit && hit.mtimeMs === st.mtimeMs && hit.size === st.size) { runs.push(hit.run); continue; }
     try {
       const run = parseTranscript(f);
+      run.mtime = st.mtimeMs;
       cache.set(f, { mtimeMs: st.mtimeMs, size: st.size, run });
       runs.push(run);
     } catch (e) {
@@ -293,7 +297,7 @@ function link(runs) {
 export function toDashboardData(all) {
   const strip = (r) => ({
     id: r.sessionId || r.id, file: r.file, project: r.project, cwd: r.cwd, branch: r.gitBranch, version: r.version,
-    title: r.title, start: r.start, end: r.end, agentId: r.agentId, subagentType: r.subagentType,
+    title: r.title, start: r.start, end: r.end, mtime: r.mtime, agentId: r.agentId, subagentType: r.subagentType,
     parentTool: r.parentTool, parentTurn: r.parentTurn, parentInv: r.parentInv,
     turns: r.turns, invocations: r.invocations,
     calls: r.calls.map(({ tools, ...c }) => c),
@@ -305,4 +309,13 @@ export function toDashboardData(all) {
     sessions: all.sessions.map(strip).sort((a, b) => String(b.start).localeCompare(String(a.start))),
     orphans: all.orphans.map(strip),
   };
+}
+
+/** Cheap fingerprint of all transcripts: used to detect live changes. */
+export function snapshot(root = defaultRoot()) {
+  const m = new Map();
+  for (const f of listTranscripts(root)) {
+    try { const st = fs.statSync(f); m.set(f, `${st.mtimeMs}:${st.size}`); } catch { /* gone */ }
+  }
+  return m;
 }

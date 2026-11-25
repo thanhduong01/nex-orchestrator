@@ -78,3 +78,10 @@ test('reloading does not duplicate subagents', () => {
   const s = toDashboardData(loadAll(root)).sessions[0];
   assert.equal(s.subagents.length, 1);
 });
+
+test('shell destination skips cd and variable assignments', async () => {
+  const { classifyTool } = await import('../src/parser.mjs');
+  assert.equal(classifyTool('Bash', { command: 'S=/tmp/x; node a.js' }).dest, 'shell:node');
+  assert.equal(classifyTool('Bash', { command: 'cd app && FOO=1 npm test' }).dest, 'shell:npm');
+  assert.equal(classifyTool('Bash', { command: 'git status' }).dest, 'shell:git');
+});

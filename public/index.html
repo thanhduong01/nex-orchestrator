@@ -62,6 +62,28 @@ tbody tr.click:hover, tbody tr.sel { background: var(--surface-2); }
 .scroll { overflow: auto; max-height: 560px; }
 .wide { overflow-x: auto; }
 .click-cat { cursor: pointer; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); vertical-align: 1px; margin-left: 3px; }
+.dot.on { background: var(--good); box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 60%, transparent); animation: pulse 1.6s infinite; }
+.dot.idle { background: var(--warn); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 55%, transparent); } 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .dot.on { animation: none; } .feed .new { animation: none; } }
+.live-grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
+@media (max-width: 640px) { .live-grid { grid-template-columns: 1fr; } }
+.live-card .top { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
+.live-card .title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-card .prompt { color: var(--text-2); margin: 6px 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 8px 0; }
+.stats div { background: var(--surface-2); border-radius: 6px; padding: 6px 8px; }
+.stats b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 11px; color: var(--text-2); }
+.running { display: flex; gap: 8px; align-items: baseline; padding: 4px 0; border-top: 1px dashed var(--border); font-size: 13px; }
+.spin { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.feed .row { display: grid; grid-template-columns: 70px 150px 1fr auto; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; align-items: baseline; }
+.feed .row > * { min-width: 0; overflow-wrap: anywhere; }
+.feed .new { animation: flash 2s ease-out; }
+@keyframes flash { from { background: color-mix(in srgb, var(--accent) 18%, transparent); } to { background: transparent; } }
+@media (max-width: 640px) { .feed .row { grid-template-columns: 60px 1fr; } .feed .row > :nth-child(2) { display: none; } .feed .row > :last-child { grid-column: 2; } }
 .click-cat:hover { border-color: var(--text-3); }
 .sel-cat { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 a.link { color: var(--accent); cursor: pointer; font-weight: 400; }
@@ -114,6 +136,7 @@ details summary { cursor: pointer; }
     <div class="brand">nex-trace<small>Claude run tracker</small></div>
     <nav id="tabs">
       <button data-tab="overview" class="on">Overview</button>
+      <button data-tab="live">Live <span id="live-dot" class="dot off"></span></button>
       <button data-tab="skills">Skills</button>
       <button data-tab="dests">Tool Calls</button>
       <button data-tab="sessions">Sessions</button>
@@ -142,6 +165,7 @@ const pct = (n) => (isFinite(n) ? (n * 100).toFixed(0) : '0') + '%';
 const dur = (ms) => !ms || ms < 0 ? '–' : ms < 1000 ? ms + 'ms' : ms < 60e3 ? (ms / 1e3).toFixed(1) + 's' : (ms / 60e3).toFixed(1) + 'm';
 const when = (ts) => ts ? new Date(ts).toLocaleString('vi-VN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
 const clock = (ts) => ts ? new Date(ts).toLocaleTimeString('vi-VN', { hour12: false }) : '';
+const ago = (ts) => { const s = Math.max(0, (Date.now() - Date.parse(ts)) / 1e3); return s < 60 ? Math.floor(s) + 's' : s < 3600 ? Math.floor(s / 60) + 'm' + String(Math.floor(s % 60)).padStart(2, '0') + 's' : (s / 3600).toFixed(1) + 'h'; };
 const tok = (c) => c.ctx + c.out;
 const NOSKILL = '(không có skill)';
 
@@ -425,7 +449,7 @@ function sessionTimeline(s) {
       const sub = subsByTool.get(e.t.idx);
       if (sub) {
         const cost = sub.calls.reduce((a, c) => a + c.cost, 0), t = sub.calls.reduce((a, c) => a + tok(c), 0);
-        h += `<details class="tl-sub"><summary>Subagent <b>${esc(sub.subagentType || sub.agentId || '')}</b> · ${sub.calls.length} API calls · ${fmt(t)} tok · ${usd(cost)} · ${sub.tools.length} tools</summary>${runBlock(sub, () => true)}</details>`;
+        h += `<details class="tl-sub" data-k="sub-${esc(sub.agentId || sub.id)}"><summary>Subagent <b>${esc(sub.subagentType || sub.agentId || '')}</b> · ${sub.calls.length} API calls · ${fmt(t)} tok · ${usd(cost)} · ${sub.tools.length} tools</summary>${runBlock(sub, () => true)}</details>`;
       }
       return h;
     }).join('');
@@ -434,9 +458,65 @@ function sessionTimeline(s) {
     const cs = s.calls.filter((c) => c.turn === t.idx);
     const cost = cs.reduce((a, c) => a + c.cost, 0);
     const skills = s.invocations.filter((i) => i.turn === t.idx).map((i) => i.skill);
-    return `<div class="tl-turn"><details ${s.turns.length <= 3 ? 'open' : ''}><summary><span class="mono dim">${when(t.ts)}</span> · ${cs.length} API calls · ${fmt(cs.reduce((a, c) => a + tok(c), 0))} tok · ${usd(cost)} ${skills.map((x) => `<span class="tag skill">${esc(x)}</span>`).join(' ')}
+    return `<div class="tl-turn"><details data-k="turn-${s.id}-${t.idx}" ${s.turns.length <= 3 || t.idx === s.turns.length - 1 ? 'open' : ''}><summary><span class="mono dim">${when(t.ts)}</span> · ${cs.length} API calls · ${fmt(cs.reduce((a, c) => a + tok(c), 0))} tok · ${usd(cost)} ${skills.map((x) => `<span class="tag skill">${esc(x)}</span>`).join(' ')}
       <div class="tl-prompt">${esc(t.prompt)}</div></summary>${runBlock(s, (x) => x.turn === t.idx)}</details></div>`;
   }).join('')}</div>`;
+}
+
+/* ---------- live ---------- */
+const RUNNING_S = 90, RECENT_MIN = 30;
+const seenEvents = new Set();
+function lastTs(run) { return [run.end, ...(run.subagents || []).map((x) => x.end)].filter(Boolean).sort().pop(); }
+function liveState(s) {
+  const last = lastTs(s); const idle = (Date.now() - Date.parse(last)) / 1e3;
+  const pending = (r) => r.tools.filter((t) => !t.done);
+  const pend = [...pending(s), ...(s.subagents || []).flatMap((x) => pending(x).map((t) => ({ ...t, sub: x })))];
+  const status = idle < RUNNING_S || (pend.length && idle < 600) ? 'on' : idle < 600 ? 'idle' : 'off';
+  return { last, idle, pend, status };
+}
+function viewLive(D) {
+  if (RAW.static) return '<div class="empty">Bản HTML xuất tĩnh không theo dõi trực tiếp được. Hãy chạy <span class="mono">nex-trace serve</span>.</div>';
+  const cutoff = Date.now() - RECENT_MIN * 6e4;
+  const act = D.sessions.filter((s) => Date.parse(lastTs(s) || 0) >= cutoff).map((s) => ({ s, ...liveState(s) })).sort((a, b) => String(b.last).localeCompare(String(a.last)));
+  const head = `<div class="muted" style="margin-bottom:10px">${CONNECTED ? '<span class="dot on"></span> Đang kết nối trực tiếp — tự cập nhật mỗi khi Claude ghi vào transcript.' : '<span class="dot off"></span> Mất kết nối tới server, đang thử lại…'} Hiển thị các session có hoạt động trong ${RECENT_MIN} phút gần đây.</div>`;
+  if (!act.length) return head + '<div class="card empty">Chưa có session nào đang chạy. Mở Claude Code và bắt đầu một task, nó sẽ hiện ở đây ngay.</div>';
+  const cards = act.map(({ s, pend, status, last }) => {
+    const turn = s.turns[s.turns.length - 1];
+    const tcalls = [...s.calls.filter((c) => c.turn === turn?.idx), ...(s.subagents || []).filter((x) => x.parentTurn === turn?.idx).flatMap((x) => x.calls)];
+    const lastCall = s.calls[s.calls.length - 1];
+    const skill = lastCall && lastCall.inv != null ? s.invocations[lastCall.inv]?.skill : null;
+    const turnSkills = s.invocations.filter((i) => i.turn === turn?.idx).map((i) => i.skill);
+    const sess = [...s.calls, ...(s.subagents || []).flatMap((x) => x.calls)];
+    const subsActive = (s.subagents || []).filter((x) => (Date.now() - Date.parse(x.end)) / 1e3 < RUNNING_S || x.tools.some((t) => !t.done));
+    return `<div class="card live-card">
+      <div class="top"><div class="title"><span class="dot ${status}"></span> ${esc(s.title || s.id.slice(0, 8))}</div><span class="dim mono" style="font-size:12px">${status === 'on' ? 'đang chạy' : 'nghỉ'} · <span data-ago="${esc(last)}">${ago(last)}</span> trước</span></div>
+      <div class="dim" style="font-size:12px">${esc(s.project)}${s.branch ? ' · ' + esc(s.branch) : ''}</div>
+      <div class="prompt">${esc(turn?.prompt || '')}</div>
+      ${skill || turnSkills.length ? `<div style="margin-bottom:6px">${skill ? `Skill đang chạy: <span class="tag skill">⚡ ${esc(skill)}</span>` : ''} ${turnSkills.filter((x) => x !== skill).map((x) => `<span class="tag">${esc(x)}</span>`).join(' ')}</div>` : ''}
+      <div class="stats">
+        <div><b>${fmt(lastCall?.ctx || 0)}</b><span>context hiện tại</span></div>
+        <div><b>${tcalls.length}</b><span>API calls lượt này</span></div>
+        <div><b>${fmt(tcalls.reduce((a, c) => a + tok(c), 0))}</b><span>tokens lượt này</span></div>
+        <div><b>${usd(sess.reduce((a, c) => a + c.cost, 0))}</b><span>cả session</span></div>
+      </div>
+      ${pend.map((t) => `<div class="running"><span class="spin"></span><span><b>${esc(t.name)}</b> → <span class="mono">${esc(t.dest)}</span>${t.sub ? ' <span class="tag">trong subagent</span>' : ''}<div class="dim mono" style="font-size:11.5px;word-break:break-all">${esc((t.detail || t.target || '').slice(0, 140))}</div></span><span class="mono dim" style="margin-left:auto" data-ago="${esc(t.ts)}">${ago(t.ts)}</span></div>`).join('')}
+      ${subsActive.map((x) => { const lt = x.tools[x.tools.length - 1]; return `<div class="running"><span class="dot on"></span><span>Subagent <b>${esc(x.subagentType || '')}</b> · ${x.calls.length} calls · ${fmt(x.calls.reduce((a, c) => a + tok(c), 0))} tok${lt ? ` · vừa gọi <span class="mono">${esc(lt.dest)}</span>` : ''}</span></div>`; }).join('')}
+    </div>`;
+  }).join('');
+  // live feed
+  const ev = [];
+  for (const { s } of act) {
+    const runs = [[s, null], ...(s.subagents || []).map((x) => [x, x])];
+    for (const [r, sub] of runs) {
+      for (const c of r.calls) ev.push({ ts: c.ts, key: `${s.id}c${sub ? sub.agentId : ''}${c.idx}`, s, sub, kind: 'API', html: `<span class="mono">${esc(c.model || '')}</span>${c.inv != null && r.invocations[c.inv] ? ` <span class="tag skill">${esc(r.invocations[c.inv].skill)}</span>` : ''}`, right: `ctx ${fmt(c.ctx)} · out ${fmt(c.out)} · ${usd(c.cost)}` });
+      for (const t of r.tools) ev.push({ ts: t.ts, key: `${s.id}t${sub ? sub.agentId : ''}${t.idx}`, s, sub, kind: t.cat === 'skill' ? 'Skill' : t.cat === 'agent' ? 'Subagent' : 'Tool', html: `<b>${esc(t.name)}</b> → <span class="mono">${esc(t.dest)}</span> <span class="dim mono" style="font-size:11.5px">${esc((t.detail || '').slice(0, 90))}</span>`, right: !t.done ? '<span class="spin"></span> đang chạy' : t.isError ? `<span class="err">lỗi</span> · ${dur(t.durationMs)}` : `${dur(t.durationMs)} · ~${fmt((t.resultChars || 0) / 4)} tok` });
+    }
+  }
+  ev.sort((a, b) => String(b.ts).localeCompare(String(a.ts)) || (b.kind === 'API') - (a.kind === 'API'));
+  const first = !seenEvents.size;
+  const feed = ev.slice(0, 60).map((e) => { const isNew = !first && !seenEvents.has(e.key); return `<div class="row ${isNew ? 'new' : ''}"><span class="mono dim">${clock(e.ts)}</span><span class="dim" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((e.s.title || e.s.id).slice(0, 26))}${e.sub ? ' › sub' : ''}</span><span><span class="tag">${e.kind}</span> ${e.html}</span><span class="mono dim" style="font-size:12px;white-space:nowrap">${e.right}</span></div>`; }).join('');
+  for (const e of ev) seenEvents.add(e.key);
+  return head + `<div class="grid live-grid">${cards}</div><div class="card" style="margin-top:12px"><h3>Luồng sự kiện trực tiếp (mới nhất ở trên)</h3><div class="feed">${feed}</div></div>`;
 }
 
 /* ---------- shell ---------- */
@@ -444,8 +524,11 @@ function render() {
   if (!RAW) return;
   const D = build(RAW);
   for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.tab === state.tab);
-  const v = { overview: viewOverview, skills: viewSkills, dests: viewDests, sessions: viewSessions }[state.tab] || viewOverview;
+  const v = { overview: viewOverview, live: viewLive, skills: viewSkills, dests: viewDests, sessions: viewSessions }[state.tab] || viewOverview;
+  const open = new Set([...document.querySelectorAll('#app details[data-k]')].filter((d) => d.open).map((d) => d.dataset.k));
+  const keepOpen = document.querySelectorAll('#app details[data-k]').length > 0;
   $('#app').innerHTML = RAW.sessions.length ? v(D) : `<div class="empty">Không tìm thấy transcript nào. Kiểm tra thư mục <span class="mono">~/.claude/projects</span> hoặc dùng <span class="mono">--dir</span>.</div>`;
+  if (keepOpen) for (const d of document.querySelectorAll('#app details[data-k]')) d.open = open.has(d.dataset.k);
   save();
 }
 
@@ -488,11 +571,38 @@ function setData(d) {
   sel.innerHTML = '<option value="">Mọi project</option>' + projs.map((p) => `<option ${p === cur ? 'selected' : ''}>${esc(p)}</option>`).join('');
   render();
 }
+let CONNECTED = false;
 async function load() {
-  if (window.__NEX_DATA__) { setData(window.__NEX_DATA__); $('#refresh').style.display = 'none'; return; }
+  if (window.__NEX_DATA__) { setData({ ...window.__NEX_DATA__, static: true }); $('#refresh').style.display = 'none'; return; }
   try { const r = await fetch('api/data', { cache: 'no-store' }); setData(await r.json()); }
   catch (e) { $('#app').innerHTML = `<div class="empty">Không tải được dữ liệu: ${esc(e.message)}</div>`; }
 }
+let liveBusy = false, liveAgain = false;
+async function loadLive() {
+  if (liveBusy) { liveAgain = true; return; }
+  liveBusy = true;
+  try {
+    const d = await (await fetch(`api/live?minutes=${RECENT_MIN}`, { cache: 'no-store' })).json();
+    // replace changed sessions by id, then prepend new ones (indices must not shift mid-merge)
+    const fresh = new Map(d.sessions.map((s) => [s.id, s]));
+    const merged = RAW.sessions.map((s) => { const n = fresh.get(s.id); if (n) fresh.delete(s.id); return n || s; });
+    RAW.sessions = [...fresh.values(), ...merged];
+    const y = scrollY; render(); scrollTo(0, y);
+  } catch { /* next event retries */ }
+  liveBusy = false;
+  if (liveAgain) { liveAgain = false; loadLive(); }
+}
+function connect() {
+  if (window.__NEX_DATA__ || !window.EventSource) return;
+  const es = new EventSource('api/events');
+  const mark = (on) => { CONNECTED = on; $('#live-dot').className = 'dot ' + (on ? 'on' : 'off'); };
+  es.onopen = () => { const was = CONNECTED; mark(true); if (!was && RAW) loadLive(); };
+  es.onerror = () => { mark(false); if (state.tab === 'live') render(); };
+  es.addEventListener('change', () => { if (RAW) loadLive(); });
+}
+// tick elapsed timers without re-rendering
+setInterval(() => { for (const el of document.querySelectorAll('[data-ago]')) el.textContent = ago(el.dataset.ago); }, 1000);
+connect();
 $('#refresh').addEventListener('click', load);
 load();
 </script>

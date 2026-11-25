@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { loadAll, toDashboardData, defaultRoot, parseTranscript } from '../src/parser.mjs';
+import { loadAll, toDashboardData, defaultRoot, parseTranscript, snapshot } from '../src/parser.mjs';
 import { summarize } from '../src/summary.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -39,12 +39,43 @@ switch (cmd) {
   case 'serve': {
     const port = Number(opt('port', process.env.PORT || 7788));
     const hostArg = opt('host', '127.0.0.1');
+    const pollMs = Number(opt('poll', 1000));
+    const clients = new Set();
+    // Live: poll transcript mtimes/sizes and push "change" events (SSE) to open dashboards.
+    let prev = snapshot(dir);
+    setInterval(() => {
+      if (!clients.size) return;
+      const cur = snapshot(dir);
+      const changed = [];
+      for (const [f, v] of cur) if (prev.get(f) !== v) changed.push(f);
+      prev = cur;
+      if (!changed.length) return;
+      const msg = `event: change\ndata: ${JSON.stringify({ files: changed.length, at: Date.now() })}\n\n`;
+      for (const res of clients) res.write(msg);
+    }, pollMs).unref();
+    setInterval(() => { for (const res of clients) res.write(': ping\n\n'); }, 20000).unref();
+
     http.createServer((req, res) => {
       const url = new URL(req.url, 'http://x');
       try {
         if (url.pathname === '/api/data') {
           res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
           res.end(JSON.stringify(getData()));
+        } else if (url.pathname === '/api/live') {
+          // only sessions touched in the last N minutes (full detail), for cheap live refreshes
+          const mins = Number(url.searchParams.get('minutes') || 30);
+          const cutoff = Date.now() - mins * 6e4;
+          const d = getData();
+          d.sessions = d.sessions.filter((s) => (s.mtime || Date.parse(s.end || 0)) >= cutoff || (s.subagents || []).some((x) => (x.mtime || 0) >= cutoff));
+          d.orphans = [];
+          d.partial = true;
+          res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(JSON.stringify(d));
+        } else if (url.pathname === '/api/events') {
+          res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' });
+          res.write('retry: 2000\n\n');
+          clients.add(res);
+          req.on('close', () => clients.delete(res));
         } else if (url.pathname === '/' || url.pathname === '/index.html') {
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
           res.end(fs.readFileSync(UI));
@@ -53,7 +84,7 @@ switch (cmd) {
         res.writeHead(500, { 'content-type': 'text/plain' }); res.end(String(e.stack || e));
       }
     }).listen(port, hostArg, () => {
-      console.log(`nex-trace dashboard: http://${hostArg === '0.0.0.0' ? 'localhost' : hostArg}:${port}`);
+      console.log(`nex-trace dashboard: http://${hostArg === '0.0.0.0' ? 'localhost' : hostArg}:${port}  (live updates every ${pollMs}ms)`);
       console.log(`reading transcripts from ${dir}`);
     });
     break;
