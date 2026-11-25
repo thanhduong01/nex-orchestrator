@@ -23,9 +23,9 @@ Tuỳ chọn chung: `--dir <thư mục projects>` (mặc định `~/.claude/proj
 
 ## Dashboard có gì
 
-- **Tổng quan** — số session, API call, tổng token, chi phí ước tính, tỉ lệ cache, biểu đồ chi phí theo ngày, và **gợi ý tối ưu** tự động (skill nạp prompt quá lớn, tỉ lệ lỗi tool cao, tool trả về output quá dài, subagent tốn nhiều…).
+- **Overview** — số session, API call, tổng token, chi phí ước tính, tỉ lệ cache, biểu đồ chi phí theo ngày, và **gợi ý tối ưu** tự động (skill nạp prompt quá lớn, tỉ lệ lỗi tool cao, tool trả về output quá dài, subagent tốn nhiều…).
 - **Skills** — mỗi skill: số lượt gọi, chi phí/lượt, token/lượt, output/lượt, kích thước SKILL.md nạp vào, số tool call/lượt, % lỗi, tỉ lệ cache, token của subagent, thời lượng. Bấm vào skill → danh sách từng lượt gọi + skill đó **gọi đi đâu**; bấm vào một lượt → timeline chi tiết từng API call (input / cache write / cache read / output) và từng tool call.
-- **Gọi đi đâu** — mọi đích mà tool call đi tới: `mcp:<server>`, `web:<domain>`, `shell:<lệnh>`, `file:*`, `agent:<loại>`, `skill:<tên>`… với số lần, lỗi, thời gian trung bình, lượng token kết quả đổ vào context, và skill nào gọi.
+- **Tool Calls** — mọi đích mà tool call đi tới: `mcp:<server>`, `web:<domain>`, `shell:<lệnh>`, `file:*`, `agent:<loại>`, `skill:<tên>`… với số lần, lỗi, thời gian trung bình, lượng token kết quả đổ vào context, và skill nào gọi.
 - **Sessions** — từng phiên, từng lượt hỏi, timeline đầy đủ, subagent lồng bên trong.
 
 ## Status line ngay trong Claude Code
