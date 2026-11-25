@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nex-trace</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4; --surface: #ffffff; --surface-2: #f0f0ed; --border: #e2e2dd;
+  --text: #191919; --text-2: #666666; --text-3: #8a8a85;
+  --accent: #257de0;
+  --s1: #257de0; --s2: #f47230; --s3: #00b894; --s4: #f2a600;
+  --bad: #c8352f; --warn: #b26b00; --good: #1d7a32;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121212; --surface: #191919; --surface-2: #222222; --border: #2e2e2e;
+    --text: #efefef; --text-2: #9c9c9c; --text-3: #7a7a7a;
+    --accent: #338ced;
+    --s1: #338ced; --s2: #e76624; --s3: #00a888; --s4: #d28e05;
+    --bad: #f07070; --warn: #e0a43a; --good: #4cc463;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121212; --surface: #191919; --surface-2: #222222; --border: #2e2e2e;
+  --text: #efefef; --text-2: #9c9c9c; --text-3: #7a7a7a;
+  --accent: #338ced;
+  --s1: #338ced; --s2: #e76624; --s3: #00a888; --s4: #d28e05;
+  --bad: #f07070; --warn: #e0a43a; --good: #4cc463;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--border); }
+.bar { max-width: 1280px; margin: 0 auto; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.brand { font-weight: 650; letter-spacing: -.01em; margin-right: 8px; }
+.brand small { color: var(--text-3); font-weight: 400; margin-left: 6px; }
+nav { display: flex; gap: 2px; background: var(--surface-2); border-radius: 8px; padding: 3px; }
+nav button { border: 0; background: transparent; color: var(--text-2); padding: 6px 12px; border-radius: 6px; font: inherit; cursor: pointer; }
+nav button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.filters { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+select, input[type=search], .btn { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; }
+.btn { cursor: pointer; }
+main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+.grid { display: grid; gap: 12px; }
+.kpis { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card h3 { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: none; }
+.kpi .v { font-size: 24px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpi .l { color: var(--text-2); font-size: 12px; }
+.two { grid-template-columns: 1.4fr 1fr; }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 12px; font-weight: 600; color: var(--text-2); cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
+th.num, td.num { text-align: right; }
+tbody tr.click { cursor: pointer; }
+tbody tr.click:hover, tbody tr.sel { background: var(--surface-2); }
+.scroll { overflow: auto; max-height: 560px; }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.muted { color: var(--text-2); }
+.dim { color: var(--text-3); }
+.tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.tag.skill { background: color-mix(in srgb, var(--s1) 16%, transparent); color: var(--text); }
+.tag.err { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+.err { color: var(--bad); }
+.hbar { height: 8px; border-radius: 0 4px 4px 0; background: var(--s1); min-width: 2px; }
+.stack { display: flex; height: 10px; gap: 2px; }
+.stack > span { display: block; height: 100%; }
+.stack > span:last-child { border-radius: 0 4px 4px 0; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); margin: 6px 0 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.insight { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.insight:last-child { border-bottom: 0; }
+.insight b { font-weight: 600; }
+.pill { flex: none; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; height: fit-content; }
+.pill.hi { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+.pill.md { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.pill.lo { background: var(--surface-2); color: var(--text-2); }
+.timeline { font-size: 13px; }
+.tl-turn { border-top: 1px solid var(--border); padding: 10px 0; }
+.tl-prompt { font-weight: 550; margin-bottom: 6px; white-space: pre-wrap; word-break: break-word; }
+.tl-row { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; padding: 3px 0 3px 10px; border-left: 2px solid var(--border); }
+.tl-row.call { color: var(--text-2); }
+.tl-row.skillstart { border-left-color: var(--s1); }
+.tl-sub { margin: 4px 0 4px 18px; padding-left: 10px; border-left: 2px dashed var(--s3); }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tip { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.12); z-index: 20; display: none; }
+.empty { padding: 40px; text-align: center; color: var(--text-2); }
+.crumbs { margin-bottom: 10px; color: var(--text-2); }
+.crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; }
+details summary { cursor: pointer; }
+@media (max-width: 640px) {
+  .filters { margin-left: 0; width: 100%; }
+  .tl-row { grid-template-columns: 54px 1fr; }
+  .tl-row > :last-child { grid-column: 2; }
+  .hide-sm { display: none; }
+}
+</style>
+<!--NEX_DATA-->
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">nex-trace<small>Claude run tracker</small></div>
+    <nav id="tabs">
+      <button data-tab="overview" class="on">Tổng quan</button>
+      <button data-tab="skills">Skills</button>
+      <button data-tab="dests">Gọi đi đâu</button>
+      <button data-tab="sessions">Sessions</button>
+    </nav>
+    <div class="filters">
+      <select id="f-range">
+        <option value="1">24 giờ</option><option value="7">7 ngày</option>
+        <option value="30" selected>30 ngày</option><option value="0">Tất cả</option>
+      </select>
+      <select id="f-project"><option value="">Mọi project</option></select>
+      <input id="f-q" type="search" placeholder="Lọc skill / tool / prompt…">
+      <button class="btn" id="refresh" title="Tải lại dữ liệu">↻</button>
+      <button class="btn" id="theme" title="Đổi giao diện sáng/tối">Sáng/Tối</button>
+    </div>
+  </div>
+</header>
+<main id="app"><div class="empty">Đang tải…</div></main>
+<div class="tip" id="tip"></div>
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = (n) => { n = +n || 0; const a = Math.abs(n); return a >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : a >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : a >= 1e4 ? (n / 1e3).toFixed(0) + 'k' : a >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n)); };
+const usd = (n) => '$' + (n >= 100 ? n.toFixed(0) : n >= 1 ? n.toFixed(2) : n.toFixed(3));
+const pct = (n) => (isFinite(n) ? (n * 100).toFixed(0) : '0') + '%';
+const dur = (ms) => !ms || ms < 0 ? '–' : ms < 1000 ? ms + 'ms' : ms < 60e3 ? (ms / 1e3).toFixed(1) + 's' : (ms / 60e3).toFixed(1) + 'm';
+const when = (ts) => ts ? new Date(ts).toLocaleString('vi-VN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+const clock = (ts) => ts ? new Date(ts).toLocaleTimeString('vi-VN', { hour12: false }) : '';
+const tok = (c) => c.ctx + c.out;
+const NOSKILL = '(không có skill)';
+
+let RAW = null;
+const state = { tab: 'overview', skill: null, inv: null, session: null, dest: null, sort: {} };
+try { Object.assign(state, JSON.parse(localStorage.getItem('nex-trace-ui') || '{}'), { inv: null }); } catch {}
+const save = () => { try { localStorage.setItem('nex-trace-ui', JSON.stringify({ tab: state.tab })); } catch {} };
+
+/* ---------- data model ---------- */
+function build(raw) {
+  const range = +$('#f-range').value, proj = $('#f-project').value, q = $('#f-q').value.trim().toLowerCase();
+  const since = range ? Date.now() - range * 864e5 : 0;
+  const sessions = raw.sessions.filter((s) => (!proj || s.project === proj) && (!since || Date.parse(s.end || s.start) >= since));
+  const calls = [], tools = [], invs = new Map();
+  const walk = (s, root, ctxInv, depth) => {
+    // ctxInv: invocation key inherited from the parent (for subagents)
+    const keyOf = (inv) => inv != null ? `${s.id}|${s.agentId || ''}#${inv}` : ctxInv;
+    for (const i of s.invocations) {
+      const key = keyOf(i.idx);
+      invs.set(key, { ...i, key, session: root, run: s, parentKey: i.parentInv != null ? keyOf(i.parentInv) : ctxInv, calls: [], tools: [], subs: [] });
+    }
+    for (const c of s.calls) calls.push({ ...c, session: root, run: s, invKey: keyOf(c.inv), depth });
+    for (const t of s.tools) tools.push({ ...t, session: root, run: s, invKey: keyOf(t.inv), depth });
+    for (const sub of s.subagents || []) {
+      const k = sub.parentInv != null ? keyOf(sub.parentInv) : ctxInv;
+      if (k && invs.get(k)) invs.get(k).subs.push(sub);
+      walk(sub, root, k, depth + 1);
+    }
+  };
+  for (const s of sessions) walk(s, s, null, 0);
+  const skillOfKey = (k) => (k && invs.get(k)?.skill) || NOSKILL;
+  for (const c of calls) { c.skill = skillOfKey(c.invKey); invs.get(c.invKey)?.calls.push(c); }
+  for (const t of tools) { t.skill = skillOfKey(t.invKey); invs.get(t.invKey)?.tools.push(t); }
+  for (const i of invs.values()) {
+    i.tokens = i.calls.reduce((a, c) => a + tok(c), 0);
+    i.out = i.calls.reduce((a, c) => a + c.out, 0);
+    i.cost = i.calls.reduce((a, c) => a + c.cost, 0);
+    i.subTokens = i.calls.filter((c) => c.depth > 0).reduce((a, c) => a + tok(c), 0);
+    i.errors = i.tools.filter((t) => t.isError).length;
+    const last = [...i.calls.map((c) => c.ts), ...i.tools.map((t) => t.ts)].filter(Boolean).sort().pop();
+    i.durationMs = last ? Date.parse(last) - Date.parse(i.ts) : 0;
+    i.promptTokens = Math.round((i.promptChars || 0) / 4);
+  }
+  // text filter
+  const match = (x) => !q || JSON.stringify([x.skill, x.name, x.dest, x.target, x.detail, x.session?.title, x.session?.turns?.[x.turn]?.prompt]).toLowerCase().includes(q);
+  return { sessions, calls: calls.filter(match), tools: tools.filter(match), invs: [...invs.values()].filter((i) => !q || match(i) || i.tools.some(match)), allInvs: invs };
+}
+
+function group(arr, keyFn, init, add) {
+  const m = new Map();
+  for (const x of arr) { const k = keyFn(x); if (!m.has(k)) m.set(k, init(k)); add(m.get(k), x); }
+  return [...m.values()];
+}
+
+function skillStats(D) {
+  const rows = group(D.calls, (c) => c.skill, (k) => ({ skill: k, runs: 0, tokens: 0, out: 0, cr: 0, ctx: 0, cost: 0, calls: 0, tools: 0, errors: 0, promptTokens: 0, subTokens: 0, durationMs: 0, dests: new Map() }),
+    (r, c) => { r.tokens += tok(c); r.out += c.out; r.cr += c.cr; r.ctx += c.ctx; r.cost += c.cost; r.calls++; if (c.depth) r.subTokens += tok(c); });
+  const by = new Map(rows.map((r) => [r.skill, r]));
+  for (const t of D.tools) { const r = by.get(t.skill); if (!r) continue; r.tools++; if (t.isError) r.errors++; r.dests.set(t.dest, (r.dests.get(t.dest) || 0) + 1); }
+  for (const i of D.invs) { const r = by.get(i.skill) || (by.set(i.skill, { skill: i.skill, runs: 0, tokens: 0, out: 0, cr: 0, ctx: 0, cost: 0, calls: 0, tools: 0, errors: 0, promptTokens: 0, subTokens: 0, durationMs: 0, dests: new Map() }), by.get(i.skill)); r.runs++; r.promptTokens += i.promptTokens; r.durationMs += i.durationMs; }
+  return [...by.values()].map((r) => ({ ...r, runsN: Math.max(r.runs, 1), cacheHit: r.ctx ? r.cr / r.ctx : 0 }));
+}
+
+/* ---------- small render helpers ---------- */
+function sortable(id, cols, rows, opts = {}) {
+  const st = state.sort[id] || { k: opts.sortKey || cols.find((c) => c.num)?.k, d: -1 };
+  const col = cols.find((c) => c.k === st.k);
+  const val = (r) => col?.v ? col.v(r) : r[st.k];
+  const sorted = [...rows].sort((a, b) => { const x = val(a), y = val(b); return (typeof x === 'string' ? x.localeCompare(y) : (x || 0) - (y || 0)) * st.d; });
+  const lim = opts.limit || 500;
+  return `<div class="scroll"><table data-tid="${id}"><thead><tr>${cols.map((c) => `<th data-k="${c.k}" class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.h}${st.k === c.k ? (st.d < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('')}</tr></thead><tbody>${
+    sorted.slice(0, lim).map((r) => `<tr class="${opts.click ? 'click' : ''} ${opts.sel && opts.sel(r) ? 'sel' : ''}" ${opts.click ? `data-id="${esc(opts.click(r))}"` : ''}>${cols.map((c) => `<td class="${c.num ? 'num' : ''} ${c.cls || ''}">${c.f ? c.f(r) : esc(r[c.k])}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}" class="empty">Không có dữ liệu</td></tr>`
+  }</tbody></table></div>${sorted.length > lim ? `<div class="dim" style="margin-top:6px">Hiển thị ${lim}/${sorted.length}</div>` : ''}`;
+}
+
+function barCell(v, max) { return `<div class="hbar" style="width:${max ? Math.max(2, (100 * v) / max) : 0}%"></div>`; }
+
+function tokenStack(r) {
+  const parts = [['--s1', r.in || 0], ['--s2', (r.cw5m || 0) + (r.cw1h || 0)], ['--s3', r.cr || 0], ['--s4', r.out || 0]];
+  const total = parts.reduce((a, p) => a + p[1], 0) || 1;
+  return `<div class="stack">${parts.filter((p) => p[1] > 0).map((p) => `<span style="width:${(100 * p[1]) / total}%;background:var(${p[0]})"></span>`).join('')}</div>`;
+}
+const TOKLEGEND = `<div class="legend"><span><i style="background:var(--s1)"></i>Input</span><span><i style="background:var(--s2)"></i>Cache write</span><span><i style="background:var(--s3)"></i>Cache read</span><span><i style="background:var(--s4)"></i>Output (gồm thinking)</span></div>`;
+
+function dailyChart(calls) {
+  const days = group(calls, (c) => (c.ts || '').slice(0, 10), (k) => ({ day: k, cost: 0, tokens: 0, calls: 0 }), (r, c) => { r.cost += c.cost; r.tokens += tok(c); r.calls++; })
+    .filter((d) => d.day).sort((a, b) => a.day.localeCompare(b.day));
+  if (!days.length) return '<div class="empty">Chưa có dữ liệu</div>';
+  const W = 640, H = 180, pl = 44, pb = 22, pt = 8;
+  const max = Math.max(...days.map((d) => d.cost)) || 1;
+  const bw = Math.max(3, Math.min(28, (W - pl) / days.length - 2));
+  const step = (W - pl) / days.length;
+  const ticks = [0, max / 2, max];
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chi phí ước tính theo ngày">
+    ${ticks.map((t) => { const y = pt + (H - pb - pt) * (1 - t / max); return `<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-width="1"/><text x="${pl - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--text-3)">${usd(t)}</text>`; }).join('')}
+    ${days.map((d, i) => { const h = Math.max(1, (H - pb - pt) * (d.cost / max)); const x = pl + i * step + (step - bw) / 2; const y = H - pb - h;
+      return `<g class="hit" data-tip="${esc(`<b>${d.day}</b><br>${usd(d.cost)} · ${fmt(d.tokens)} tokens · ${d.calls} API calls`)}"><rect x="${pl + i * step}" y="${pt}" width="${step}" height="${H - pb - pt}" fill="transparent"/><path d="M${x},${H - pb} V${y + 3} q0,-3 3,-3 h${bw - 6} q3,0 3,3 V${H - pb} Z" fill="var(--s1)"/></g>`; }).join('')}
+    ${days.map((d, i) => (days.length <= 12 || i % Math.ceil(days.length / 8) === 0) ? `<text x="${pl + i * step + step / 2}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--text-3)">${d.day.slice(5)}</text>` : '').join('')}
+  </svg></div>`;
+}
+
+/* ---------- insights ---------- */
+function insights(D, skills) {
+  const out = [];
+  const total = D.calls.reduce((a, c) => a + c.cost, 0) || 1;
+  for (const s of skills) {
+    if (s.skill === NOSKILL) continue;
+    if (s.promptTokens / s.runsN > 15000) out.push(['md', `Skill <b>${esc(s.skill)}</b> nạp ~${fmt(s.promptTokens / s.runsN)} tokens nội dung SKILL.md mỗi lần gọi. Tách phần ít dùng ra file tham chiếu (references/) để chỉ đọc khi cần.`, s.promptTokens]);
+    if (s.tools >= 5 && s.errors / s.tools > 0.15) out.push(['hi', `Skill <b>${esc(s.skill)}</b> có ${pct(s.errors / s.tools)} tool call lỗi (${s.errors}/${s.tools}). Lỗi lặp lại = token lãng phí; xem lại hướng dẫn trong skill.`, s.errors * 1e4]);
+    if (s.cost / total > 0.3 && s.runs > 0) out.push(['md', `Skill <b>${esc(s.skill)}</b> chiếm ${pct(s.cost / total)} tổng chi phí. Trung bình ${usd(s.cost / s.runsN)}/lần, ${(s.tools / s.runsN).toFixed(1)} tool calls/lần.`, s.cost * 1e6]);
+    if (s.ctx > 2e5 && s.cacheHit < 0.5) out.push(['md', `Skill <b>${esc(s.skill)}</b> có tỉ lệ cache read thấp (${pct(s.cacheHit)}). Context thay đổi nhiều giữa các lượt sẽ tốn input token.`, s.ctx]);
+  }
+  const big = group(D.tools, (t) => t.dest, (k) => ({ dest: k, n: 0, chars: 0, max: 0 }), (r, t) => { r.n++; r.chars += t.resultChars || 0; r.max = Math.max(r.max, t.resultChars || 0); })
+    .filter((d) => d.chars / 4 > 50000).sort((a, b) => b.chars - a.chars).slice(0, 4);
+  for (const d of big) out.push(['lo', `<b>${esc(d.dest)}</b> trả về tổng ~${fmt(d.chars / 4)} tokens vào context (${d.n} lần, lớn nhất ~${fmt(d.max / 4)}). Giới hạn output (head, grep, limit) sẽ giảm chi phí các lượt sau.`, d.chars]);
+  const subs = D.calls.filter((c) => c.depth > 0);
+  if (subs.length) { const st = subs.reduce((a, c) => a + c.cost, 0); if (st / total > 0.25) out.push(['lo', `Subagent chiếm ${pct(st / total)} chi phí (${subs.length} API calls). Kiểm tra skill nào sinh nhiều subagent ở tab Skills.`, st * 1e6]); }
+  return out.sort((a, b) => ({ hi: 0, md: 1, lo: 2 }[a[0]] - { hi: 0, md: 1, lo: 2 }[b[0]]) || b[2] - a[2]).slice(0, 8);
+}
+
+/* ---------- views ---------- */
+function viewOverview(D) {
+  const cost = D.calls.reduce((a, c) => a + c.cost, 0), tokens = D.calls.reduce((a, c) => a + tok(c), 0);
+  const ctx = D.calls.reduce((a, c) => a + c.ctx, 0), cr = D.calls.reduce((a, c) => a + c.cr, 0);
+  const skills = skillStats(D).sort((a, b) => b.cost - a.cost);
+  const named = D.invs.length;
+  const maxCost = Math.max(...skills.map((s) => s.cost), 0);
+  const ins = insights(D, skills);
+  const kpi = (v, l) => `<div class="card kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  return `<div class="grid kpis">
+      ${kpi(D.sessions.length, 'Sessions')}
+      ${kpi(fmt(D.calls.length), 'API calls')}
+      ${kpi(fmt(tokens), 'Tokens (input+cache+output)')}
+      ${kpi(usd(cost), 'Chi phí ước tính (giá API)')}
+      ${kpi(named, 'Lượt gọi skill')}
+      ${kpi(pct(ctx ? cr / ctx : 0), 'Tỉ lệ cache read')}
+    </div>
+    <div class="grid two" style="margin-top:12px">
+      <div class="card"><h3>Chi phí ước tính theo ngày</h3>${dailyChart(D.calls)}</div>
+      <div class="card"><h3>Gợi ý tối ưu</h3>${ins.length ? ins.map(([lv, t]) => `<div class="insight"><span class="pill ${lv}">${lv === 'hi' ? 'Cao' : lv === 'md' ? 'Vừa' : 'Gợi ý'}</span><div>${t}</div></div>`).join('') : '<div class="muted">Chưa thấy điểm bất thường nào.</div>'}</div>
+    </div>
+    <div class="card" style="margin-top:12px"><h3>Skill theo chi phí</h3>${TOKLEGEND}
+      ${sortable('ov-skills', [
+        { k: 'skill', h: 'Skill', f: (r) => `<span class="tag ${r.skill === NOSKILL ? '' : 'skill'}">${esc(r.skill)}</span>` },
+        { k: 'runs', h: 'Lượt', num: 1 },
+        { k: 'cost', h: 'Chi phí', num: 1, f: (r) => usd(r.cost) },
+        { k: 'bar', h: '', cls: 'hide-sm', v: (r) => r.cost, f: (r) => `<div style="min-width:120px">${barCell(r.cost, maxCost)}</div>` },
+        { k: 'tokens', h: 'Tokens', num: 1, f: (r) => fmt(r.tokens) },
+        { k: 'mix', h: 'Cơ cấu token', cls: 'hide-sm', v: (r) => r.out, f: (r) => `<div style="min-width:120px">${tokenStack({ in: r.ctx - r.cr, cr: r.cr, out: r.out })}</div>` },
+      ], skills, { sortKey: 'cost', click: (r) => r.skill })}
+    </div>`;
+}
+
+function invRows(list) {
+  return sortable('invs', [
+    { k: 'ts', h: 'Thời điểm', v: (r) => r.ts, f: (r) => `<span class="mono">${when(r.ts)}</span>` },
+    { k: 'via', h: 'Kích hoạt', f: (r) => `<span class="tag">${r.via === 'slash' ? '/lệnh' : 'Skill tool'}</span>` },
+    { k: 'title', h: 'Session / prompt', v: (r) => r.session.title || '', f: (r) => `<div>${esc(r.session.title || r.session.id.slice(0, 8))}</div><div class="dim" style="font-size:12px">${esc((r.run.turns[r.turn]?.prompt || '').slice(0, 110))}</div>` },
+    { k: 'tokens', h: 'Tokens', num: 1, f: (r) => fmt(r.tokens) },
+    { k: 'cost', h: 'Chi phí', num: 1, f: (r) => usd(r.cost) },
+    { k: 'nt', h: 'Tools', num: 1, v: (r) => r.tools.length, f: (r) => r.tools.length + (r.errors ? ` <span class="err">(${r.errors} lỗi)</span>` : '') },
+    { k: 'subs', h: 'Subagent', num: 1, v: (r) => r.subs.length, f: (r) => r.subs.length ? `${r.subs.length} · ${fmt(r.subTokens)}` : '–' },
+    { k: 'durationMs', h: 'Thời lượng', num: 1, f: (r) => dur(r.durationMs) },
+  ], list, { sortKey: 'ts', click: (r) => r.key, sel: (r) => r.key === state.inv });
+}
+
+function destTable(tools, id) {
+  const rows = group(tools, (t) => t.dest, (k) => ({ dest: k, cat: '', n: 0, err: 0, chars: 0, ms: 0, msN: 0, skills: new Map(), sample: '' }),
+    (r, t) => { r.cat = t.cat; r.n++; if (t.isError) r.err++; r.chars += t.resultChars || 0; if (t.durationMs > 0) { r.ms += t.durationMs; r.msN++; } r.skills.set(t.skill, (r.skills.get(t.skill) || 0) + 1); if (!r.sample) r.sample = t.detail || t.target; });
+  const max = Math.max(...rows.map((r) => r.n), 0);
+  return sortable(id, [
+    { k: 'dest', h: 'Đích', f: (r) => `<div class="mono">${esc(r.dest)}</div><div class="dim mono" style="font-size:11.5px;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.sample)}</div>` },
+    { k: 'cat', h: 'Loại', f: (r) => `<span class="tag">${esc(r.cat)}</span>` },
+    { k: 'n', h: 'Số lần', num: 1 },
+    { k: 'bar', h: '', cls: 'hide-sm', v: (r) => r.n, f: (r) => `<div style="min-width:90px">${barCell(r.n, max)}</div>` },
+    { k: 'err', h: 'Lỗi', num: 1, f: (r) => r.err ? `<span class="err">${r.err}</span>` : '0' },
+    { k: 'chars', h: '~Tokens trả về', num: 1, f: (r) => fmt(r.chars / 4) },
+    { k: 'avg', h: 'TB thời gian', num: 1, v: (r) => r.msN ? r.ms / r.msN : 0, f: (r) => dur(r.msN ? Math.round(r.ms / r.msN) : 0) },
+    { k: 'sk', h: 'Từ skill', cls: 'hide-sm', v: (r) => r.skills.size, f: (r) => [...r.skills].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([s, n]) => `<span class="tag ${s === NOSKILL ? '' : 'skill'}">${esc(s)} ×${n}</span>`).join(' ') },
+  ], rows, { sortKey: 'n' });
+}
+
+function viewSkills(D) {
+  const skills = skillStats(D);
+  if (state.skill && !skills.some((s) => s.skill === state.skill)) state.skill = null;
+  let html = `<div class="card"><h3>Hiệu quả từng skill — bấm một dòng để xem chi tiết</h3>
+    ${sortable('skills', [
+      { k: 'skill', h: 'Skill', f: (r) => `<span class="tag ${r.skill === NOSKILL ? '' : 'skill'}">${esc(r.skill)}</span>` },
+      { k: 'runs', h: 'Lượt', num: 1, f: (r) => r.runs || '–' },
+      { k: 'cost', h: 'Tổng chi phí', num: 1, f: (r) => usd(r.cost) },
+      { k: 'cpr', h: 'Chi phí/lượt', num: 1, v: (r) => r.cost / r.runsN, f: (r) => usd(r.cost / r.runsN) },
+      { k: 'tpr', h: 'Tokens/lượt', num: 1, v: (r) => r.tokens / r.runsN, f: (r) => fmt(r.tokens / r.runsN) },
+      { k: 'opr', h: 'Output/lượt', num: 1, v: (r) => r.out / r.runsN, f: (r) => fmt(r.out / r.runsN) },
+      { k: 'ppr', h: 'Prompt skill', num: 1, v: (r) => r.promptTokens / r.runsN, f: (r) => r.promptTokens ? '~' + fmt(r.promptTokens / r.runsN) : '–' },
+      { k: 'tl', h: 'Tools/lượt', num: 1, v: (r) => r.tools / r.runsN, f: (r) => (r.tools / r.runsN).toFixed(1) },
+      { k: 'er', h: 'Lỗi', num: 1, v: (r) => r.tools ? r.errors / r.tools : 0, f: (r) => r.errors ? `<span class="err">${pct(r.errors / r.tools)}</span>` : '0%' },
+      { k: 'cacheHit', h: 'Cache', num: 1, f: (r) => pct(r.cacheHit) },
+      { k: 'subTokens', h: 'Subagent tok', num: 1, f: (r) => r.subTokens ? fmt(r.subTokens) : '–' },
+      { k: 'dpr', h: 'TG/lượt', num: 1, v: (r) => r.durationMs / r.runsN, f: (r) => dur(r.durationMs / r.runsN) },
+    ], skills, { sortKey: 'cost', click: (r) => r.skill, sel: (r) => r.skill === state.skill })}
+    <div class="dim" style="margin-top:8px;font-size:12px">Một "lượt" skill tính từ lúc skill được gọi đến hết lượt trả lời đó (hoặc tới skill kế tiếp). Token của subagent sinh ra trong lượt được cộng vào skill. "Prompt skill" ≈ kích thước SKILL.md nạp vào context.</div>
+  </div>`;
+  if (state.skill) {
+    const invs = D.invs.filter((i) => i.skill === state.skill);
+    const ts = D.tools.filter((t) => t.skill === state.skill);
+    html += `<div class="grid two" style="margin-top:12px">
+      <div class="card"><h3>Các lượt gọi <span class="tag skill">${esc(state.skill)}</span></h3>${state.skill === NOSKILL ? '<div class="muted">Các API call không nằm trong skill nào. Xem tab Sessions để duyệt chi tiết.</div>' : invRows(invs)}</div>
+      <div class="card"><h3>Skill này gọi đi đâu</h3>${destTable(ts, 'skill-dests')}</div>
+    </div>`;
+    const inv = state.inv && D.allInvs.get(state.inv);
+    if (inv && inv.skill === state.skill) html += `<div class="card" style="margin-top:12px"><h3>Chi tiết lượt gọi · ${when(inv.ts)} · ${esc(inv.session.title || '')}</h3>${invTimeline(inv)}</div>`;
+  }
+  return html;
+}
+
+function callLine(c) {
+  return `<div class="tl-row call"><span class="mono dim">${clock(c.ts)}</span><span>API · <span class="mono">${esc(c.model || '')}</span>${c.depth ? ' <span class="tag">subagent</span>' : ''}</span><span class="mono" title="input ${c.in} · cache write ${c.cw5m + c.cw1h} · cache read ${c.cr} · output ${c.out} (thinking ${c.think})">ctx ${fmt(c.ctx)} · out ${fmt(c.out)} · ${usd(c.cost)}</span></div>`;
+}
+function toolLine(t) {
+  return `<div class="tl-row ${t.cat === 'skill' ? 'skillstart' : ''}"><span class="mono dim">${clock(t.ts)}</span><span><b>${esc(t.name)}</b> → <span class="mono">${esc(t.dest)}</span>${t.isError ? ' <span class="tag err">lỗi</span>' : ''}<div class="dim mono" style="font-size:11.5px;word-break:break-all">${esc(t.detail || t.target || '')}</div></span><span class="mono dim">${dur(t.durationMs)} · ~${fmt((t.resultChars || 0) / 4)} tok</span></div>`;
+}
+function runEvents(run, filter) {
+  const ev = [...run.calls.filter(filter).map((c) => ({ ts: c.ts, k: 0, c })), ...run.tools.filter(filter).map((t) => ({ ts: t.ts, k: 1, t }))]
+    .sort((a, b) => String(a.ts).localeCompare(String(b.ts)) || a.k - b.k);
+  return ev;
+}
+function invTimeline(inv) {
+  const items = [...inv.calls.map((c) => ({ ts: c.ts, k: 0, html: callLine(c) })), ...inv.tools.map((t) => ({ ts: t.ts, k: 1, html: toolLine(t) }))]
+    .sort((a, b) => String(a.ts).localeCompare(String(b.ts)) || a.k - b.k);
+  const sumTok = { in: 0, cw5m: 0, cw1h: 0, cr: 0, out: 0 };
+  for (const c of inv.calls) for (const k in sumTok) sumTok[k] += c[k];
+  return `<div class="muted" style="margin-bottom:8px">Prompt: ${esc(inv.run.turns[inv.turn]?.prompt || '')}${inv.args ? `<br>Args: <span class="mono">${esc(inv.args)}</span>` : ''}</div>
+    ${TOKLEGEND}<div style="max-width:520px;margin-bottom:6px">${tokenStack(sumTok)}</div>
+    <div class="muted mono" style="margin-bottom:10px;font-size:12px">input ${fmt(sumTok.in)} · cache write ${fmt(sumTok.cw5m + sumTok.cw1h)} · cache read ${fmt(sumTok.cr)} · output ${fmt(sumTok.out)} · ${usd(inv.cost)} · prompt skill ~${fmt(inv.promptTokens)} tok</div>
+    <div class="timeline">${items.map((x) => x.html).join('')}</div>`;
+}
+
+function viewDests(D) {
+  const cats = group(D.tools, (t) => t.cat, (k) => ({ cat: k, n: 0 }), (r) => r.n++).sort((a, b) => b.n - a.n);
+  return `<div class="card"><h3>Tất cả nơi Claude gọi tới (tool, MCP server, web, shell, subagent, skill)</h3>
+    <div class="legend">${cats.map((c) => `<span class="tag">${esc(c.cat)} · ${c.n}</span>`).join('')}</div>
+    ${destTable(D.tools, 'dests')}
+    <div class="dim" style="margin-top:8px;font-size:12px">"~Tokens trả về" ≈ kích thước kết quả tool / 4 — phần này bị đưa vào context và tính tiền ở mọi lượt sau.</div></div>`;
+}
+
+function viewSessions(D) {
+  const rows = D.sessions.map((s) => {
+    const cs = D.calls.filter((c) => c.session === s);
+    return { s, id: s.id, title: s.title || s.id.slice(0, 8), start: s.start, project: s.project, turns: s.turns.length,
+      calls: cs.length, tokens: cs.reduce((a, c) => a + tok(c), 0), cost: cs.reduce((a, c) => a + c.cost, 0),
+      skills: [...new Set(D.invs.filter((i) => i.session === s).map((i) => i.skill))], subs: (s.subagents || []).length };
+  });
+  let html = `<div class="card"><h3>Sessions</h3>${sortable('sessions', [
+    { k: 'start', h: 'Bắt đầu', f: (r) => `<span class="mono">${when(r.start)}</span>` },
+    { k: 'title', h: 'Tiêu đề', f: (r) => `${esc(r.title)}<div class="dim" style="font-size:12px">${esc(r.project)}</div>` },
+    { k: 'turns', h: 'Lượt', num: 1 },
+    { k: 'calls', h: 'API calls', num: 1 },
+    { k: 'tokens', h: 'Tokens', num: 1, f: (r) => fmt(r.tokens) },
+    { k: 'cost', h: 'Chi phí', num: 1, f: (r) => usd(r.cost) },
+    { k: 'subs', h: 'Subagent', num: 1 },
+    { k: 'skills', h: 'Skills', cls: 'hide-sm', v: (r) => r.skills.length, f: (r) => r.skills.map((x) => `<span class="tag skill">${esc(x)}</span>`).join(' ') },
+  ], rows, { sortKey: 'start', click: (r) => r.id, sel: (r) => r.id === state.session, limit: 300 })}</div>`;
+  const s = state.session && D.sessions.find((x) => x.id === state.session);
+  if (s) html += `<div class="card" style="margin-top:12px"><h3>${esc(s.title || s.id)} <span class="dim mono">${esc(s.id)}</span></h3>${sessionTimeline(s)}</div>`;
+  return html;
+}
+
+function sessionTimeline(s) {
+  const runBlock = (run, turnFilter) => {
+    const ev = runEvents(run, turnFilter);
+    const subsByTool = new Map((run.subagents || []).filter((x) => x.parentTool != null).map((x) => [x.parentTool, x]));
+    return ev.map((e) => {
+      if (e.k === 0) return callLine({ ...e.c, depth: run === s ? 0 : 1 });
+      let h = toolLine(e.t);
+      const sub = subsByTool.get(e.t.idx);
+      if (sub) {
+        const cost = sub.calls.reduce((a, c) => a + c.cost, 0), t = sub.calls.reduce((a, c) => a + tok(c), 0);
+        h += `<details class="tl-sub"><summary>Subagent <b>${esc(sub.subagentType || sub.agentId || '')}</b> · ${sub.calls.length} API calls · ${fmt(t)} tok · ${usd(cost)} · ${sub.tools.length} tools</summary>${runBlock(sub, () => true)}</details>`;
+      }
+      return h;
+    }).join('');
+  };
+  return `<div class="timeline">${s.turns.map((t) => {
+    const cs = s.calls.filter((c) => c.turn === t.idx);
+    const cost = cs.reduce((a, c) => a + c.cost, 0);
+    const skills = s.invocations.filter((i) => i.turn === t.idx).map((i) => i.skill);
+    return `<div class="tl-turn"><details ${s.turns.length <= 3 ? 'open' : ''}><summary><span class="mono dim">${when(t.ts)}</span> · ${cs.length} API calls · ${fmt(cs.reduce((a, c) => a + tok(c), 0))} tok · ${usd(cost)} ${skills.map((x) => `<span class="tag skill">${esc(x)}</span>`).join(' ')}
+      <div class="tl-prompt">${esc(t.prompt)}</div></summary>${runBlock(s, (x) => x.turn === t.idx)}</details></div>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- shell ---------- */
+function render() {
+  if (!RAW) return;
+  const D = build(RAW);
+  for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.tab === state.tab);
+  const v = { overview: viewOverview, skills: viewSkills, dests: viewDests, sessions: viewSessions }[state.tab] || viewOverview;
+  $('#app').innerHTML = RAW.sessions.length ? v(D) : `<div class="empty">Không tìm thấy transcript nào. Kiểm tra thư mục <span class="mono">~/.claude/projects</span> hoặc dùng <span class="mono">--dir</span>.</div>`;
+  save();
+}
+
+$('#app').addEventListener('click', (e) => {
+  const th = e.target.closest('th[data-k]');
+  if (th) {
+    const id = th.closest('table').dataset.tid, k = th.dataset.k, cur = state.sort[id];
+    state.sort[id] = { k, d: cur && cur.k === k ? -cur.d : -1 }; render(); return;
+  }
+  const tr = e.target.closest('tr[data-id]');
+  if (!tr) return;
+  const tid = tr.closest('table').dataset.tid, id = tr.dataset.id;
+  if (tid === 'ov-skills') { state.tab = 'skills'; state.skill = id; state.inv = null; }
+  else if (tid === 'skills') { state.skill = state.skill === id ? null : id; state.inv = null; }
+  else if (tid === 'invs') { state.inv = state.inv === id ? null : id; }
+  else if (tid === 'sessions') { state.session = state.session === id ? null : id; }
+  render();
+});
+$('#tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { state.tab = b.dataset.tab; render(); } });
+for (const id of ['#f-range', '#f-project']) $(id).addEventListener('change', render);
+let qT; $('#f-q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(render, 200); });
+$('#theme').addEventListener('click', () => {
+  const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark';
+});
+const tip = $('#tip');
+document.addEventListener('mousemove', (e) => {
+  const g = e.target.closest && e.target.closest('[data-tip]');
+  if (!g) { tip.style.display = 'none'; return; }
+  tip.innerHTML = g.dataset.tip; tip.style.display = 'block';
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); tip.style.left = x + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+});
+
+function setData(d) {
+  RAW = d;
+  const projs = [...new Set(d.sessions.map((s) => s.project))].sort();
+  const sel = $('#f-project'), cur = sel.value;
+  sel.innerHTML = '<option value="">Mọi project</option>' + projs.map((p) => `<option ${p === cur ? 'selected' : ''}>${esc(p)}</option>`).join('');
+  render();
+}
+async function load() {
+  if (window.__NEX_DATA__) { setData(window.__NEX_DATA__); $('#refresh').style.display = 'none'; return; }
+  try { const r = await fetch('api/data', { cache: 'no-store' }); setData(await r.json()); }
+  catch (e) { $('#app').innerHTML = `<div class="empty">Không tải được dữ liệu: ${esc(e.message)}</div>`; }
+}
+$('#refresh').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

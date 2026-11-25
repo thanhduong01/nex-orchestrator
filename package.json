@@ -1,0 +1,15 @@
+{
+  "name": "nex-trace",
+  "version": "0.1.0",
+  "description": "Track Claude Code runs: which skills run, where they call out to, and how many tokens they spend.",
+  "type": "module",
+  "bin": { "nex-trace": "bin/nex-trace.mjs" },
+  "scripts": {
+    "start": "node bin/nex-trace.mjs serve",
+    "report": "node bin/nex-trace.mjs report",
+    "build": "node bin/nex-trace.mjs build",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
