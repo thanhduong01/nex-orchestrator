@@ -2,3 +2,4 @@ node_modules/
 *.html.out
 nex-trace.html
 data.json
+*.bundle
